@@ -573,7 +573,7 @@ export default function Operators() {
 
   return (
     <div className="text-[#26364d]">
-      <section className="p-4">
+      <section className="py-4">
         <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
           {/* HEADER */}
 
