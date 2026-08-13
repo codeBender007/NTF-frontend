@@ -37,7 +37,7 @@ const collectNames = (node, field, acc = []) => {
    MAIN COMPONENT
 ============================================================ */
 
-export default function Department() {
+export default function Operators() {
   const navigate = useNavigate();
   const [departments, setDepartments] = useState(getInitialData);
   const [search, setSearch] = useState("");
@@ -113,7 +113,6 @@ export default function Department() {
     const step = ALL_STEPS[stepIndex];
 
     const dept = departments.find((d) => d.id === session.deptId);
-
     if (!dept) return "";
 
     if (step.key === "department") {
@@ -121,25 +120,21 @@ export default function Department() {
     }
 
     const sec = dept.sections?.find((s) => s.id === session.sectionId);
-
     if (step.key === "section") {
       return sec?.name || "";
     }
 
     const ln = sec?.lines?.find((l) => l.id === session.lineId);
-
     if (step.key === "line") {
       return ln?.name || "";
     }
 
     const sub = ln?.subSections?.find((s) => s.id === session.subSectionId);
-
     if (step.key === "subSection") {
       return sub?.name || "";
     }
 
     const mac = sub?.machines?.find((m) => m.id === session.machineId);
-
     if (step.key === "machine") {
       return mac?.name || "";
     }
@@ -578,7 +573,7 @@ export default function Department() {
 
   return (
     <div className="text-[#26364d]">
-      <section className="p-4 sm:p-[30px_25px]">
+      <section className="p-4">
         <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
           {/* HEADER */}
 
@@ -589,7 +584,7 @@ export default function Department() {
               </div>
 
               <div className="min-w-0">
-                <h1 className="text-[15px] font-bold">Departments</h1>
+                <h1 className="text-[15px] font-bold">Operators</h1>
 
                 <p className="mt-0.5 text-xs text-[#718096]">
                   Manage departments and their complete hierarchy
@@ -602,7 +597,7 @@ export default function Department() {
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6] sm:w-auto"
             >
               <CirclePlus size={16} />
-              Add Department
+              Add Operator
             </button>
           </div>
 
@@ -627,7 +622,7 @@ export default function Department() {
             <div className="flex flex-col gap-3 border-b border-[#edf0f3] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-[15px] font-bold text-[#26364d]">
-                  Department
+                  Operators
                 </h3>
               </div>
 
@@ -678,7 +673,7 @@ export default function Department() {
                             className="flex items-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2 text-xs font-semibold text-white"
                           >
                             <CirclePlus size={15} />
-                            Add Department
+                            Add Operator
                           </button>
                         </div>
                       </td>

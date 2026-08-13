@@ -15,6 +15,7 @@ import SectionPage from "../features/lms/pages/SectionPage";
 import MachinePage from "../features/lms/pages/MachinePage";
 import Roles from "../features/lms/pages/Roles";
 import LMSDashboard from "../features/lms/pages/LMSDashboard";
+import Operators from "../features/lms/pages/OperatorsPage";
 
 const App = () => {
   return (
@@ -54,6 +55,8 @@ const App = () => {
         />
 
         <Route path="/lms/roles" element={<Roles />} />
+
+        <Route path="/lms/operators" element={<Operators />} />
 
         <Route path="/lms/l0" element={<L0 />} />
 
