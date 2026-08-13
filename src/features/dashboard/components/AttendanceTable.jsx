@@ -24,20 +24,6 @@ const rows = [
     status: "Active",
     workHours: "8h 40m",
   },
-  {
-    id: 2,
-    empId: "NTF00124",
-    employee: "Priya Patel",
-    department: "Production",
-    subDepartment: "Painting",
-    line: "Line 2",
-    shift: "General",
-    date: "01 Aug 2026",
-    checkIn: "08:48 AM",
-    checkOut: "05:30 PM",
-    status: "Inactive",
-    workHours: "8h 42m",
-  },
 ];
 
 const statusStyles = {
