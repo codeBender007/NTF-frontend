@@ -6,9 +6,10 @@ import SignalCellularAltRoundedIcon from "@mui/icons-material/SignalCellularAltR
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import KPICards from "../../../components/KPICards";
+import LMSTabs from "../components/LMSTabs";
 import { lmsMenus } from "../data/LMSMenu";
-import Filters from "../../../Components/Filters";
 import Operators from "../components/Operators";
+import OperatorLevels from "../components/OperatorLevels";
 
 const kpiData = [
   {
@@ -41,6 +42,7 @@ const OperatorsPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Operators");
+  const [activeTab, setActiveTab] = useState("Operators");
 
   return (
     <div className="flex h-screen bg-[#F5F7FB] overflow-hidden">
@@ -59,9 +61,23 @@ const OperatorsPage = () => {
           <Navbar setMobileOpen={setMobileOpen} activeMenu={activeMenu} />
         </div>
 
+        <div className="sticky top-[64px] z-20">
+          <LMSTabs
+            tabs={["Operators", "Operator Levels"]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
+
         <main className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-          <KPICards data={kpiData} />
-          <Operators />
+          {activeTab === "Operators" && (
+            <>
+              <KPICards data={kpiData} />
+              <Operators />
+            </>
+          )}
+
+          {activeTab === "Operator Levels" && <OperatorLevels />}
         </main>
       </div>
     </div>

@@ -16,6 +16,7 @@ import MachinePage from "../features/lms/pages/MachinePage";
 import Roles from "../features/lms/pages/Roles";
 import LMSDashboard from "../features/lms/pages/LMSDashboard";
 import Operators from "../features/lms/pages/OperatorsPage";
+import UsersPage from "../features/lms/pages/UsersPage";
 import OperatorProfile from "../features/lms/pages/OperatorProfile";
 
 const App = () => {
@@ -58,6 +59,8 @@ const App = () => {
         <Route path="/lms/roles" element={<Roles />} />
 
         <Route path="/lms/operators" element={<Operators />} />
+
+        <Route path="/lms/users" element={<UsersPage />} />
 
         <Route path="/lms/operator/:id" element={<OperatorProfile />} />
 

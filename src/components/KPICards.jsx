@@ -31,9 +31,13 @@ const colorClasses = {
   },
 };
 
-const KPICards = ({ data = [] }) => {
+const KPICards = ({ data = [], gridClass }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+    <div
+      className={`grid gap-4 mb-4 ${
+        gridClass || "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+      }`}
+    >
       {data.map((item, index) => {
         const c = colorClasses[item.color] || colorClasses.blue;
 

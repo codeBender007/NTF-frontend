@@ -4,6 +4,7 @@ import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import EngineeringOutlinedIcon from "@mui/icons-material/EngineeringOutlined";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 
 export const lmsMenus = [
    {
@@ -26,11 +27,16 @@ export const lmsMenus = [
        icon: <GroupOutlinedIcon />,
        path: "/lms/employees",
      },
-       {
-       name: "Operators",
-       icon: <EngineeringOutlinedIcon />,
-       path: "/lms/operators",
-     },
+{
+        name: "Operators",
+        icon: <EngineeringOutlinedIcon />,
+        path: "/lms/operators",
+      },
+        {
+        name: "Users",
+        icon: <ManageAccountsOutlinedIcon />,
+        path: "/lms/users",
+      },
         {
        name: "Roles & Permissions",
        icon: <AdminPanelSettingsOutlinedIcon />,

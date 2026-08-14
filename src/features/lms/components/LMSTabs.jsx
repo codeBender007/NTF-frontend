@@ -1,14 +1,11 @@
 import { useState } from "react";
 
-const tabs = [
-  "Test Papers",
-  "Day 1",
-  "Day 2",
-  
-];
+const defaultTabs = ["Test Papers", "Day 1", "Day 2"];
 
-const LMSTabs = ({ activeTab, onTabChange }) => {
-  const [internalActiveTab, setInternalActiveTab] = useState("Test Papers");
+const LMSTabs = ({ tabs = defaultTabs, activeTab, onTabChange }) => {
+  const [internalActiveTab, setInternalActiveTab] = useState(
+    tabs[0] || defaultTabs[0]
+  );
 
   const selectedTab = activeTab ?? internalActiveTab;
 
@@ -23,7 +20,6 @@ const LMSTabs = ({ activeTab, onTabChange }) => {
   return (
     <div className="w-full border-b border-gray-200 bg-white">
       <div className="flex min-w-max items-center gap-0 px-5">
-
         {tabs.map((tab) => {
           const isActive = selectedTab === tab;
 

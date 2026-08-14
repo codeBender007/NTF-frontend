@@ -15,6 +15,15 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
+import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
+import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
+import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import KPICards from "../../../components/KPICards";
+import profileBg from "../../../assets/images/profile-bg.png";
 
 const defaultOperator = {
   name: "RAM",
@@ -33,6 +42,11 @@ const defaultOperator = {
   contractor: "N/A",
   employeeType: "Regular",
   shift: "N/A",
+  todayShift: "N/A",
+  courses: "N/A",
+  progress: "N/A",
+  submission: "N/A",
+  testAvg: "N/A",
   fatherHusband: "—",
   gender: "MALE",
   dob: "—",
@@ -46,10 +60,21 @@ const defaultOperator = {
   gradeRule: "Self / Not Assigned",
 };
 
+const getInitials = (name = "") => {
+  const parts = String(name).trim().split(/\s+/);
+  const initials = parts
+    .slice(0, 2)
+    .map((p) => p.charAt(0))
+    .join("")
+    .toUpperCase();
+
+  return initials || "OP";
+};
+
 const InfoRow = ({ icon: Icon, label, value, valueClass = "" }) => {
   return (
-    <div className="flex items-start gap-3 border-b border-[#EEF0F5] py-3 last:border-b-0">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
+    <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
         <Icon sx={{ fontSize: 17 }} />
       </div>
 
@@ -69,8 +94,8 @@ const InfoRow = ({ icon: Icon, label, value, valueClass = "" }) => {
 
 const PrimaryInfo = ({ icon: Icon, label, value }) => {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
+    <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
         <Icon sx={{ fontSize: 20 }} />
       </div>
 
@@ -91,6 +116,12 @@ const STATUS_PILL_STYLES = {
   LEFT: "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]",
 };
 
+const STATUS_DOT_STYLES = {
+  ACTIVE: "bg-[#16864A]",
+  "ON LEAVE": "bg-[#E6920B]",
+  LEFT: "bg-[#E74C3C]",
+};
+
 const StatusPill = ({ status }) => {
   const normalized = (status || "").toUpperCase();
 
@@ -98,10 +129,13 @@ const StatusPill = ({ status }) => {
     STATUS_PILL_STYLES[normalized] ||
     "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
 
+  const dot = STATUS_DOT_STYLES[normalized] || "bg-[#9AA3AF]";
+
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}
     >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {status || "—"}
     </span>
   );
@@ -160,30 +194,42 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
   };
 
   return (
-    <div className="space-y-3 p-3 md:p-4 lg:p-5">
+    <div className="space-y-4 p-3 md:p-4 lg:p-5">
       {/* =========================================================
           TOP PROFILE HEADER
       ========================================================= */}
-      <section className="rounded-2xl border border-[#E8EAF0] bg-white p-5 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+      <section className="relative overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${profileBg})` }}
+        />
+
+        <div className="relative z-10 flex flex-col gap-5 p-6 md:p-7 xl:flex-row xl:items-center xl:justify-between">
           {/* LEFT PROFILE */}
-          <div className="flex min-w-0 items-center gap-5">
+          <div className="flex items-center gap-4 md:gap-5">
+            {/* Avatar */}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] text-xl font-bold text-[#6F4AE7] md:h-20 md:w-20 md:text-2xl">
+              {getInitials(data.name)}
+            </div>
+
             {/* Identity */}
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-[#101828]">
+              <h1 className="text-2xl font-bold tracking-tight text-[#101828] md:text-3xl">
                 {data.name}
               </h1>
 
-              <p className="mt-1 text-sm font-medium text-[#667085]">
+              <p className="mt-1 flex items-center gap-2 text-sm font-medium text-[#667085]">
+                <span className="text-[#8B93A7]">Employee ID</span>
                 {data.employeeId}
               </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-[#A89CFF] bg-[#F7F5FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
+                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
                   {data.level}
                 </span>
 
-                <span className="inline-flex items-center rounded-full border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-1 text-xs font-semibold text-[#344054]">
+                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
                   {data.department}
                 </span>
 
@@ -204,7 +250,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
             <button
               type="button"
-              className="flex h-10 w-9 items-center justify-center rounded-lg border border-[#E4E7EC] bg-white text-[#667085] hover:bg-[#F9FAFB]"
+              className="flex h-10 w-9 items-center justify-center rounded-lg border border-[#E4E7EC] bg-white text-[#667085] transition hover:bg-[#F9FAFB]"
             >
               <MoreVertOutlinedIcon sx={{ fontSize: 19 }} />
             </button>
@@ -215,22 +261,25 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
       {/* =========================================================
           MAIN PROFILE AREA
       ========================================================= */}
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
         {/* =====================================================
             PRIMARY DETAILS
         ===================================================== */}
-        <section className="rounded-2xl border border-[#E8EAF0] bg-white p-5 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-          <div className="mb-3 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F0FF] text-[#6F4AE7]">
+        <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
               <PersonOutlineOutlinedIcon sx={{ fontSize: 20 }} />
             </div>
 
-            <h2 className="text-sm font-bold text-[#252B3A]">
-              Primary Details
-            </h2>
+            <div>
+              <h2 className="text-sm font-bold text-white">Primary Details</h2>
+              <p className="text-[11px] font-medium text-white/80">
+                Contact information
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5 p-4">
             <PrimaryInfo
               icon={EmailOutlinedIcon}
               label="Email Address"
@@ -248,186 +297,276 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
         {/* =====================================================
             DETAILED PROFILE
         ===================================================== */}
-        <section className="min-w-0 rounded-2xl border border-[#E8EAF0] bg-white p-5 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
           {/* Header */}
-          <div className="mb-4 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F0FF] text-[#6F4AE7]">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
               <BusinessOutlinedIcon sx={{ fontSize: 20 }} />
             </div>
 
-            <h2 className="text-sm font-bold text-[#252B3A]">
-              Detailed Profile Information
-            </h2>
+            <div>
+              <h2 className="text-sm font-bold text-white">
+                Detailed Profile Information
+              </h2>
+              <p className="text-[11px] font-medium text-white/80">
+                Personal, professional & location details
+              </p>
+            </div>
           </div>
 
           {/* THREE COLUMNS */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* PERSONAL */}
-            <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4">
-              <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
-                  <FamilyRestroomOutlinedIcon sx={{ fontSize: 18 }} />
+          <div className="p-5">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {/* PERSONAL */}
+              <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
+                <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <FamilyRestroomOutlinedIcon sx={{ fontSize: 18 }} />
+                  </div>
+
+                  <h3 className="text-[13px] font-bold text-[#252B3A]">
+                    Personal
+                  </h3>
                 </div>
 
-                <h3 className="text-[13px] font-bold text-[#252B3A]">
-                  Personal
-                </h3>
+                <InfoRow
+                  icon={FamilyRestroomOutlinedIcon}
+                  label="Father / Husband"
+                  value={data.fatherHusband}
+                />
+
+                <InfoRow
+                  icon={WcOutlinedIcon}
+                  label="Gender / DOB"
+                  value={`${data.gender} / ${data.dob}`}
+                />
+
+                <InfoRow
+                  icon={SchoolOutlinedIcon}
+                  label="Qualification"
+                  value={data.qualification}
+                  valueClass="inline-block rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[#5B3BE6]"
+                />
+
+                <InfoRow
+                  icon={FlagOutlinedIcon}
+                  label="Joining Date"
+                  value={data.joiningDate}
+                />
               </div>
-              <InfoRow
-                icon={FamilyRestroomOutlinedIcon}
-                label="Father / Husband"
-                value={data.fatherHusband}
-              />
 
-              <InfoRow
-                icon={WcOutlinedIcon}
-                label="Gender / DOB"
-                value={`${data.gender} / ${data.dob}`}
-              />
+              {/* PROFESSIONAL */}
+              <div className="rounded-2xl border border-[#EEF0F5] bg-white p-4 transition hover:border-[#DDD5FF]">
+                <div className="mb-3 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <AccountTreeOutlinedIcon sx={{ fontSize: 18 }} />
+                  </div>
 
-              <InfoRow
-                icon={SchoolOutlinedIcon}
-                label="Qualification"
-                value={data.qualification}
-                valueClass="inline-block rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[#5B3BE6]"
-              />
-
-              <InfoRow
-                icon={FlagOutlinedIcon}
-                label="Joining Date"
-                value={data.joiningDate}
-              />
-            </div>
-
-            {/* PROFESSIONAL */}
-            <div className="rounded-2xl border border-[#EEF0F5] bg-white p-4">
-              <div className="mb-3 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
-                  <AccountTreeOutlinedIcon sx={{ fontSize: 18 }} />
+                  <h3 className="text-[13px] font-bold text-[#252B3A]">
+                    Professional
+                  </h3>
                 </div>
 
-                <h3 className="text-[13px] font-bold text-[#252B3A]">
-                  Professional
-                </h3>
-              </div>
+                <p className="mb-3 text-[11px] font-bold text-[#344054]">
+                  Organizational Assignment Flow
+                </p>
 
-              <p className="mb-3 text-[11px] font-bold text-[#344054]">
-                Organizational Assignment Flow
-              </p>
+                <div className="flex flex-col items-center">
+                  {/* Department */}
+                  <div className="flex w-full items-center justify-center gap-2">
+                    <div className="w-[115px]">
+                      <FlowBox
+                        icon={ApartmentOutlinedIcon}
+                        label="DEPT"
+                        value={data.department}
+                      />
+                    </div>
 
-              <div className="flex flex-col items-center">
-                {/* Department */}
-                <div className="flex w-full items-center justify-center gap-2">
-                  <div className="w-[115px]">
+                    <ArrowForwardIosOutlinedIcon
+                      sx={{ fontSize: 12, color: "#A5ACBA" }}
+                    />
+
+                    <div className="relative w-[115px]">
+                      <FlowBox
+                        icon={AccountTreeOutlinedIcon}
+                        label="SECTION"
+                        value={data.section}
+                      />
+
+                      <span className="absolute -right-2 -top-2 rounded-full bg-[#6F4AE7] px-1.5 py-0.5 text-[7px] font-bold text-white">
+                        Primary
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Connector */}
+                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
+
+                  {/* Line */}
+                  <div className="flex w-full justify-center">
                     <FlowBox
                       icon={ApartmentOutlinedIcon}
-                      label="DEPT"
-                      value={data.department}
+                      label="LINE"
+                      value={data.line}
+                      color="blue"
                     />
                   </div>
 
-                  <ArrowForwardIosOutlinedIcon
-                    sx={{ fontSize: 12, color: "#A5ACBA" }}
-                  />
+                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
-                  <div className="relative w-[115px]">
+                  {/* Sub section */}
+                  <div className="flex w-full justify-center">
                     <FlowBox
-                      icon={AccountTreeOutlinedIcon}
-                      label="SECTION"
-                      value={data.section}
+                      icon={LayersOutlinedIcon}
+                      label="SUB-SECT"
+                      value={data.subSection}
+                      color="purple"
+                    />
+                  </div>
+
+                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
+
+                  {/* Station + Level */}
+                  <div className="grid w-full grid-cols-2 gap-2">
+                    <FlowBox
+                      icon={SettingsOutlinedIcon}
+                      label="STATION"
+                      value={data.station}
+                      color="red"
                     />
 
-                    <span className="absolute -right-2 -top-2 rounded-full bg-[#6F4AE7] px-1.5 py-0.5 text-[7px] font-bold text-white">
-                      Primary
-                    </span>
+                    <FlowBox
+                      icon={LayersOutlinedIcon}
+                      label="LEVEL"
+                      value={data.level}
+                      color="purple"
+                    />
+                  </div>
+
+                  <div className="h-3 w-px border-l border-dashed border-[#A5ACBA]" />
+
+                  {/* Efficiency */}
+                  <div className="w-1/2 min-w-[100px]">
+                    <FlowBox
+                      icon={SettingsOutlinedIcon}
+                      label="EFFICIENCY"
+                      value={data.efficiency}
+                      color="green"
+                    />
                   </div>
                 </div>
-
-                {/* Connector */}
-                <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                {/* Line */}
-                <div className="flex w-full justify-center">
-                  <FlowBox
-                    icon={ApartmentOutlinedIcon}
-                    label="LINE"
-                    value={data.line}
-                    color="blue"
-                  />
-                </div>
-
-                <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                {/* Sub section */}
-                <div className="flex w-full justify-center">
-                  <FlowBox
-                    icon={LayersOutlinedIcon}
-                    label="SUB-SECT"
-                    value={data.subSection}
-                    color="purple"
-                  />
-                </div>
-
-                <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                {/* Station + Level */}
-                <div className="grid w-full grid-cols-2 gap-2">
-                  <FlowBox
-                    icon={SettingsOutlinedIcon}
-                    label="STATION"
-                    value={data.station}
-                    color="red"
-                  />
-
-                  <FlowBox
-                    icon={LayersOutlinedIcon}
-                    label="LEVEL"
-                    value={data.level}
-                    color="purple"
-                  />
-                </div>
-
-                <div className="h-3 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                {/* Efficiency */}
-                <div className="w-1/2 min-w-[100px]">
-                  <FlowBox
-                    icon={SettingsOutlinedIcon}
-                    label="EFFICIENCY"
-                    value={data.efficiency}
-                    color="green"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* LOCATION & TRANSIT */}
-            <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4">
-              <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
-                  <LocationOnOutlinedIcon sx={{ fontSize: 18 }} />
-                </div>
-
-                <h3 className="text-[13px] font-bold text-[#252B3A]">
-                  Location & Transit
-                </h3>
               </div>
 
-              <InfoRow
-                icon={LocationOnOutlinedIcon}
-                label="District & State"
-                value={data.district}
-              />
+              {/* LOCATION & TRANSIT */}
+              <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
+                <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <LocationOnOutlinedIcon sx={{ fontSize: 18 }} />
+                  </div>
 
-              <InfoRow
-                icon={PinDropOutlinedIcon}
-                label="PIN Code"
-                value={data.pinCode}
-              />
+                  <h3 className="text-[13px] font-bold text-[#252B3A]">
+                    Location & Transit
+                  </h3>
+                </div>
+
+                <InfoRow
+                  icon={LocationOnOutlinedIcon}
+                  label="District & State"
+                  value={data.district}
+                />
+
+                <InfoRow
+                  icon={PinDropOutlinedIcon}
+                  label="PIN Code"
+                  value={data.pinCode}
+                />
+              </div>
             </div>
           </div>
         </section>
       </div>
+
+      {/* =========================================================
+          SHIFT SCHEDULE
+      ========================================================= */}
+      <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
+            <ScheduleOutlinedIcon sx={{ fontSize: 20 }} />
+          </div>
+
+          <div>
+            <h2 className="text-sm font-bold text-white">Shift Schedule</h2>
+            <p className="text-[11px] font-medium text-white/80">
+              Default and today&apos;s working shift
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+          {/* DEFAULT SHIFT */}
+          <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+              <CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />
+            </div>
+
+            <div>
+              <p className="text-[11px] font-medium text-[#8B93A7]">
+                Default Shift
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-[#252B3A]">
+                {data.shift || "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* TODAY'S SHIFT */}
+          <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+              <TodayOutlinedIcon sx={{ fontSize: 22 }} />
+            </div>
+
+            <div>
+              <p className="text-[11px] font-medium text-[#8B93A7]">
+                Today&apos;s Shift
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-[#252B3A]">
+                {data.todayShift || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/*LEARNING / TRAINING CARD */}
+      <KPICards
+        data={[
+          {
+            title: "Courses",
+            value: data.courses || "—",
+            color: "indigo",
+            icon: <MenuBookOutlinedIcon sx={{ fontSize: 24 }} />,
+          },
+          {
+            title: "Progress",
+            value: data.progress || "—",
+            color: "green",
+            icon: <TrendingUpOutlinedIcon sx={{ fontSize: 24 }} />,
+          },
+          {
+            title: "Submission",
+            value: data.submission || "—",
+            color: "blue",
+            icon: <TaskAltOutlinedIcon sx={{ fontSize: 24 }} />,
+          },
+          {
+            title: "Test Avg",
+            value: data.testAvg || "—",
+            color: "orange",
+            icon: <FactCheckOutlinedIcon sx={{ fontSize: 24 }} />,
+          },
+        ]}
+      />
     </div>
   );
 };
