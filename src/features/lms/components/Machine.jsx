@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -19,14 +19,19 @@ const STORAGE_KEY = "lms_departments";
 const createId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
+const loadDepartments = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+};
+
 const Machine = () => {
   const navigate = useNavigate();
   const { deptId, sectionId, lineId } = useParams();
 
-  /* -------------------------------------------------
-     State
-  ------------------------------------------------- */
-  const [storageVersion, setStorageVersion] = useState(0);
+  const [departments, setDepartments] = useState(loadDepartments);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
@@ -47,299 +52,68 @@ const Machine = () => {
     status: "Active",
   });
 
-  /* -------------------------------------------------
-     Load current line from localStorage
-  ------------------------------------------------- */
-  const line = useMemo(() => {
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  /* =========================================================
+     PREPARE DATA
+  ========================================================= */
 
-      const dept = data.find((d) => String(d.id) === String(deptId));
+  // The line opened by the URL (/lms/machine/:deptId/:sectionId/:lineId)
+  const department = departments.find(
+    (dept) => String(dept.id) === String(deptId),
+  );
 
-      const section = dept?.sections?.find(
-        (s) => String(s.id) === String(sectionId),
-      );
+  const section = department?.sections?.find(
+    (currentSection) => String(currentSection.id) === String(sectionId),
+  );
 
-      return (
-        section?.lines?.find(
-          (l) =>
-            String(l.id) === String(lineId) ||
-            String(l.code) === String(lineId),
-        ) || null
-      );
-    } catch (error) {
-      console.error("Unable to load line:", error);
-      return null;
-    }
-  }, [deptId, sectionId, lineId, storageVersion]);
+  const line =
+    section?.lines?.find(
+      (currentLine) =>
+        String(currentLine.id) === String(lineId) ||
+        String(currentLine.code) === String(lineId),
+    ) || null;
 
-  const machines = useMemo(() => line?.machines || [], [line]);
+  const machines = line?.machines || [];
 
-  /* -------------------------------------------------
-     Filter machines
-  ------------------------------------------------- */
-  const filteredMachines = useMemo(() => {
+  const filteredMachines = machines.filter((machine) => {
     const value = search.trim().toLowerCase();
 
-    return machines.filter((machine) => {
-      const matchesSearch =
-        !value ||
-        [machine.name, machine.code, machine.type, machine.status].some(
-          (field) =>
-            String(field || "")
-              .toLowerCase()
-              .includes(value),
-        );
-
-      const matchesType =
-        !filterValues.machine || machine.type === filterValues.machine;
-
-      return matchesSearch && matchesType;
-    });
-  }, [machines, search, filterValues]);
-
-  /* -------------------------------------------------
-     Filter options
-  ------------------------------------------------- */
-  const filterOptions = useMemo(() => {
-    const unique = (list) => [...new Set(list.filter(Boolean))];
-
-    return {
-      types: unique(machines.map((machine) => machine.type)),
-    };
-  }, [machines]);
-
-  /* -------------------------------------------------
-     Stats
-  ------------------------------------------------- */
-  const stats = useMemo(() => {
-    const active = machines.filter(
-      (machine) => machine.status === "Active",
-    ).length;
-
-    const operators = machines.reduce(
-      (total, machine) => total + (Number(machine.operators) || 0),
-      0,
-    );
-
-    return {
-      total: machines.length,
-      active,
-      inactive: machines.length - active,
-      operators,
-    };
-  }, [machines]);
-
-  /* -------------------------------------------------
-     Toast
-  ------------------------------------------------- */
-  const showToast = (message) => {
-    setToast(message);
-
-    setTimeout(() => {
-      setToast("");
-    }, 2500);
-  };
-
-  /* -------------------------------------------------
-     Open Add Modal
-  ------------------------------------------------- */
-  const openAddModal = () => {
-    setEditingMachine(null);
-
-    setForm({
-      name: "",
-      code: "",
-      type: "Loader",
-      operators: 1,
-      status: "Active",
-    });
-
-    setShowModal(true);
-  };
-
-  /* -------------------------------------------------
-     Open Edit Modal
-  ------------------------------------------------- */
-  const openEditModal = (machine) => {
-    setEditingMachine(machine);
-
-    setForm({
-      name: machine.name || "",
-      code: machine.code || "",
-      type: machine.type || "Loader",
-      operators: machine.operators || 1,
-      status: machine.status || "Active",
-    });
-
-    setShowModal(true);
-  };
-
-  /* -------------------------------------------------
-     Save Machine
-  ------------------------------------------------- */
-  const saveMachine = () => {
-    if (!line) return;
-
-    const name = form.name.trim();
-    const code = form.code.trim();
-
-    if (!name) {
-      showToast("Please enter machine name.");
-      return;
-    }
-
-    if (!code) {
-      showToast("Please enter machine code.");
-      return;
-    }
-
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-      const duplicate = data.some((d) =>
-        (d.sections || []).some((s) =>
-          (s.lines || []).some((l) =>
-            (l.machines || []).some(
-              (m) => String(m.code || "").toLowerCase() === code.toLowerCase(),
-            ),
-          ),
-        ),
+    const matchesSearch =
+      !value ||
+      [machine.name, machine.code, machine.type, machine.status].some(
+        (field) =>
+          String(field || "")
+            .toLowerCase()
+            .includes(value),
       );
 
-      if (duplicate) {
-        showToast("Machine code already exists.");
-        return;
-      }
+    const matchesType =
+      !filterValues.machine || machine.type === filterValues.machine;
 
-      const updatedData = data.map((dept) => {
-        if (String(dept.id) !== String(deptId)) {
-          return dept;
-        }
+    return matchesSearch && matchesType;
+  });
 
-        return {
-          ...dept,
-          sections: (dept.sections || []).map((section) => {
-            if (String(section.id) !== String(sectionId)) {
-              return section;
-            }
+  const unique = (list) => [...new Set(list.filter(Boolean))];
 
-            return {
-              ...section,
-              lines: (section.lines || []).map((currentLine) => {
-                const isTarget =
-                  String(currentLine.id) === String(lineId) ||
-                  String(currentLine.code) === String(lineId);
-
-                if (!isTarget) {
-                  return currentLine;
-                }
-
-                const machine = {
-                  id: createId("machine"),
-                  name,
-                  code,
-                  type: form.type,
-                  operators: Number(form.operators) || 0,
-                  status: form.status,
-                };
-
-                if (editingMachine) {
-                  return {
-                    ...currentLine,
-                    machines: (currentLine.machines || []).map((m) =>
-                      m.id === editingMachine.id ? { ...m, ...machine } : m,
-                    ),
-                  };
-                }
-
-                return {
-                  ...currentLine,
-                  machines: [...(currentLine.machines || []), machine],
-                };
-              }),
-            };
-          }),
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-
-      setStorageVersion((version) => version + 1);
-
-      setShowModal(false);
-
-      showToast(
-        editingMachine
-          ? "Machine updated successfully."
-          : "Machine created successfully.",
-      );
-    } catch (error) {
-      console.error("Unable to save machine:", error);
-    }
+  const filterOptions = {
+    types: unique(machines.map((machine) => machine.type)),
   };
 
-  /* -------------------------------------------------
-     Delete Machine
-  ------------------------------------------------- */
-  const handleDelete = (machine) => {
-    if (!line) return;
+  const activeMachines = machines.filter(
+    (machine) => machine.status === "Active",
+  ).length;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${machine.name}"?`,
-    );
+  const totalOperators = machines.reduce(
+    (total, machine) => total + (Number(machine.operators) || 0),
+    0,
+  );
 
-    if (!confirmed) return;
-
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-      const updatedData = data.map((dept) => {
-        if (String(dept.id) !== String(deptId)) {
-          return dept;
-        }
-
-        return {
-          ...dept,
-          sections: (dept.sections || []).map((section) => {
-            if (String(section.id) !== String(sectionId)) {
-              return section;
-            }
-
-            return {
-              ...section,
-              lines: (section.lines || []).map((currentLine) => {
-                const isTarget =
-                  String(currentLine.id) === String(lineId) ||
-                  String(currentLine.code) === String(lineId);
-
-                if (!isTarget) {
-                  return currentLine;
-                }
-
-                return {
-                  ...currentLine,
-                  machines: (currentLine.machines || []).filter(
-                    (m) => String(m.id) !== String(machine.id),
-                  ),
-                };
-              }),
-            };
-          }),
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-
-      setStorageVersion((version) => version + 1);
-    } catch (error) {
-      console.error("Unable to delete machine:", error);
-    }
+  const stats = {
+    total: machines.length,
+    active: activeMachines,
+    inactive: machines.length - activeMachines,
+    operators: totalOperators,
   };
 
-  /* -------------------------------------------------
-     KPI data
-  ------------------------------------------------- */
   const kpiData = [
     {
       title: "Total Machines",
@@ -367,9 +141,190 @@ const Machine = () => {
     },
   ];
 
-  /* -------------------------------------------------
-     Line not found
-  ------------------------------------------------- */
+  /* =========================================================
+     TOAST
+  ========================================================= */
+
+  const showToast = (message) => {
+    setToast(message);
+
+    setTimeout(() => {
+      setToast("");
+    }, 2500);
+  };
+
+  /* =========================================================
+     ADD / EDIT MODAL
+  ========================================================= */
+
+  const openAddModal = () => {
+    setEditingMachine(null);
+
+    setForm({
+      name: "",
+      code: "",
+      type: "Loader",
+      operators: 1,
+      status: "Active",
+    });
+
+    setShowModal(true);
+  };
+
+  const openEditModal = (machine) => {
+    setEditingMachine(machine);
+
+    setForm({
+      name: machine.name || "",
+      code: machine.code || "",
+      type: machine.type || "Loader",
+      operators: machine.operators || 1,
+      status: machine.status || "Active",
+    });
+
+    setShowModal(true);
+  };
+
+  const saveMachine = () => {
+    if (!line) return;
+
+    const name = form.name.trim();
+    const code = form.code.trim();
+
+    if (!name) {
+      showToast("Please enter machine name.");
+      return;
+    }
+
+    if (!code) {
+      showToast("Please enter machine code.");
+      return;
+    }
+
+    const duplicate = departments.some((dept) =>
+      (dept.sections || []).some((currentSection) =>
+        (currentSection.lines || []).some((currentLine) =>
+          (currentLine.machines || []).some(
+            (machine) =>
+              String(machine.code || "").toLowerCase() === code.toLowerCase(),
+          ),
+        ),
+      ),
+    );
+
+    if (duplicate) {
+      showToast("Machine code already exists.");
+      return;
+    }
+
+    const machine = {
+      id: createId("machine"),
+      name,
+      code,
+      type: form.type,
+      operators: Number(form.operators) || 0,
+      status: form.status,
+    };
+
+    const next = departments.map((dept) =>
+      String(dept.id) !== String(deptId)
+        ? dept
+        : {
+            ...dept,
+            sections: (dept.sections || []).map((currentSection) =>
+              String(currentSection.id) !== String(sectionId)
+                ? currentSection
+                : {
+                    ...currentSection,
+                    lines: (currentSection.lines || []).map((currentLine) => {
+                      const isTarget =
+                        String(currentLine.id) === String(lineId) ||
+                        String(currentLine.code) === String(lineId);
+
+                      if (!isTarget) return currentLine;
+
+                      if (editingMachine) {
+                        return {
+                          ...currentLine,
+                          machines: (currentLine.machines || []).map((m) =>
+                            m.id === editingMachine.id
+                              ? { ...m, ...machine }
+                              : m,
+                          ),
+                        };
+                      }
+
+                      return {
+                        ...currentLine,
+                        machines: [...(currentLine.machines || []), machine],
+                      };
+                    }),
+                  },
+            ),
+          },
+    );
+
+    setDepartments(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setShowModal(false);
+
+    showToast(
+      editingMachine
+        ? "Machine updated successfully."
+        : "Machine created successfully.",
+    );
+  };
+
+  /* =========================================================
+     DELETE MACHINE
+  ========================================================= */
+
+  const handleDelete = (machine) => {
+    if (!line) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${machine.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    const next = departments.map((dept) =>
+      String(dept.id) !== String(deptId)
+        ? dept
+        : {
+            ...dept,
+            sections: (dept.sections || []).map((currentSection) =>
+              String(currentSection.id) !== String(sectionId)
+                ? currentSection
+                : {
+                    ...currentSection,
+                    lines: (currentSection.lines || []).map((currentLine) => {
+                      const isTarget =
+                        String(currentLine.id) === String(lineId) ||
+                        String(currentLine.code) === String(lineId);
+
+                      if (!isTarget) return currentLine;
+
+                      return {
+                        ...currentLine,
+                        machines: (currentLine.machines || []).filter(
+                          (m) => String(m.id) !== String(machine.id),
+                        ),
+                      };
+                    }),
+                  },
+            ),
+          },
+    );
+
+    setDepartments(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
+
+  /* =========================================================
+     LINE NOT FOUND
+  ========================================================= */
+
   if (!line) {
     return (
       <div className="flex min-h-[calc(100vh-70px)] items-center justify-center bg-[#F5F7FB] text-[#26364d]">
@@ -394,13 +349,16 @@ const Machine = () => {
     );
   }
 
+  /* =========================================================
+     MAIN UI
+  ========================================================= */
+
   return (
     <div className="text-[#26364d]">
       <section className="p-[30px_25px]">
         <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
-          {/* =====================================================
-              HEADER
-          ===================================================== */}
+          {/* HEADER */}
+
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#edf0f3] px-5 py-[18px]">
             <div className="flex items-center gap-3">
               <div className="flex h-[45px] w-[45px] items-center justify-center rounded-xl bg-gradient-to-br from-[#6c4ce8] to-[#8b6ffe] text-white shadow-md shadow-[#6c4ce8]/30">
@@ -437,9 +395,8 @@ const Machine = () => {
             </div>
           </div>
 
-          {/* =====================================================
-              FILTERS
-          ===================================================== */}
+          {/* FILTERS */}
+
           <div className="m-5">
             <Filters
               values={filterValues}
@@ -453,20 +410,15 @@ const Machine = () => {
             />
           </div>
 
-          {/* =====================================================
-              KPI CARDS
-          ===================================================== */}
+          {/* KPI CARDS */}
+
           <div className="mx-5 mb-5">
             <KPICards data={kpiData} />
           </div>
 
-          {/* =====================================================
-              MACHINE TABLE
-          ===================================================== */}
+          {/* MACHINE TABLE */}
 
           <div className="mx-5 mb-5 overflow-hidden rounded-[14px] border border-[#e3e6eb]">
-            {/* TABLE HEADER */}
-
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0f3] px-5 py-[18px]">
               <div>
                 <h2 className="text-[18px] font-bold text-[#26364d]">
@@ -483,25 +435,35 @@ const Machine = () => {
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search machines..."
                   className="h-9 w-full rounded-lg border border-[#d5d9df] bg-[#f7f8fa] pl-9 pr-3 text-[13px] text-[#26364d] outline-none transition placeholder:text-[#9aa3af] focus:border-[#6c4ce8] focus:bg-white"
                 />
               </div>
             </div>
 
-            {/* TABLE */}
-
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px] border-collapse">
                 <thead>
                   <tr className="bg-[#f5f6f8]">
-                    <TableHeader>Machine Name</TableHeader>
-                    <TableHeader>Code</TableHeader>
-                    <TableHeader>Type</TableHeader>
-                    <TableHeader>Operators</TableHeader>
-                    <TableHeader>Status</TableHeader>
-                    <TableHeader>Actions</TableHeader>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Machine Name
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Code
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Type
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Operators
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Status
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -521,76 +483,88 @@ const Machine = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredMachines.map((machine, index) => (
-                      <tr
-                        key={`${machine.id}-${index}`}
-                        className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
-                      >
-                        {/* NAME */}
+                    filteredMachines.map((machine, index) => {
+                      const isActive =
+                        machine.status?.toLowerCase() === "active";
+                      const isLoader = machine.type?.toLowerCase() === "loader";
 
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="text-[14px] text-[#344760]">
-                                {machine.name}
-                              </p>
+                      return (
+                        <tr
+                          key={`${machine.id}-${index}`}
+                          className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="text-[14px] text-[#344760]">
+                                  {machine.name}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* CODE */}
+                          <td className="border-r border-[#edf0f2] px-4 py-3 text-[14px] text-[#44556c] last:border-r-0">
+                            {machine.code || "—"}
+                          </td>
 
-                        <TableCell>{machine.code || "—"}</TableCell>
-
-                        {/* TYPE */}
-
-                        <TableCell>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                              machine.type?.toLowerCase() === "loader"
-                                ? "bg-[#f0ecff] text-[#6c4ce8]"
-                                : "bg-[#eef7ff] text-[#3182ce]"
-                            }`}
-                          >
-                            {machine.type}
-                          </span>
-                        </TableCell>
-
-                        {/* OPERATORS */}
-
-                        <TableCell>{machine.operators || 0}</TableCell>
-
-                        {/* STATUS */}
-
-                        <TableCell>
-                          <StatusBadge status={machine.status} />
-                        </TableCell>
-
-                        {/* ACTIONS */}
-
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(machine)}
-                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6c4ce8] transition hover:bg-[#e6dfff]"
-                              title="Edit machine"
+                          <td className="border-r border-[#edf0f2] px-4 py-3 text-[14px] text-[#44556c] last:border-r-0">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                                isLoader
+                                  ? "bg-[#f0ecff] text-[#6c4ce8]"
+                                  : "bg-[#eef7ff] text-[#3182ce]"
+                              }`}
                             >
-                              <Pencil size={15} />
-                            </button>
+                              {machine.type}
+                            </span>
+                          </td>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(machine)}
-                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#fff0ee] text-[#e74c3c] transition hover:bg-[#ffe3df]"
-                              title="Delete machine"
+                          <td className="border-r border-[#edf0f2] px-4 py-3 text-[14px] text-[#44556c] last:border-r-0">
+                            {machine.operators || 0}
+                          </td>
+
+                          <td className="border-r border-[#edf0f2] px-4 py-3 text-[14px] text-[#44556c] last:border-r-0">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
+                                isActive
+                                  ? "bg-green-100 text-green-600"
+                                  : "bg-[#f5f6f8] text-[#718096]"
+                              }`}
                             >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  isActive ? "bg-green-600" : "bg-[#9aa3af]"
+                                }`}
+                              />
+
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(machine)}
+                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6c4ce8] transition hover:bg-[#e6dfff]"
+                                title="Edit machine"
+                              >
+                                <Pencil size={15} />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(machine)}
+                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#fff0ee] text-[#e74c3c] transition hover:bg-[#ffe3df]"
+                                title="Delete machine"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -599,9 +573,7 @@ const Machine = () => {
         </div>
       </section>
 
-      {/* =================================================
-          ADD / EDIT MACHINE MODAL
-      ================================================= */}
+      {/* ADD / EDIT MACHINE MODAL */}
 
       {showModal && (
         <div
@@ -613,7 +585,6 @@ const Machine = () => {
           }}
         >
           <div className="w-full max-w-[520px] overflow-hidden rounded-[17px] bg-white shadow-2xl">
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#e3e6eb] px-5 py-[18px]">
               <div>
                 <h2 className="text-[15px] font-bold text-[#26364d]">
@@ -636,10 +607,8 @@ const Machine = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="space-y-5">
-                {/* Machine Name */}
                 <div>
                   <label className="mb-2 block text-xs font-semibold text-[#26364d]">
                     Machine Name
@@ -650,10 +619,10 @@ const Machine = () => {
                     autoFocus
                     type="text"
                     value={form.name}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
-                        name: e.target.value,
+                        name: event.target.value,
                       }))
                     }
                     placeholder="Enter machine name"
@@ -661,7 +630,6 @@ const Machine = () => {
                   />
                 </div>
 
-                {/* Code */}
                 <div>
                   <label className="mb-2 block text-xs font-semibold text-[#26364d]">
                     Machine Code
@@ -671,10 +639,10 @@ const Machine = () => {
                   <input
                     type="text"
                     value={form.code}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
-                        code: e.target.value,
+                        code: event.target.value,
                       }))
                     }
                     placeholder="e.g. M-001"
@@ -682,7 +650,6 @@ const Machine = () => {
                   />
                 </div>
 
-                {/* Type + Operators */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-2 block text-xs font-semibold text-[#26364d]">
@@ -691,10 +658,10 @@ const Machine = () => {
 
                     <select
                       value={form.type}
-                      onChange={(e) =>
+                      onChange={(event) =>
                         setForm((prev) => ({
                           ...prev,
-                          type: e.target.value,
+                          type: event.target.value,
                         }))
                       }
                       className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm text-[#26364d] outline-none transition focus:border-[#6c4ce8]"
@@ -714,10 +681,10 @@ const Machine = () => {
                       type="number"
                       min="0"
                       value={form.operators}
-                      onChange={(e) =>
+                      onChange={(event) =>
                         setForm((prev) => ({
                           ...prev,
-                          operators: e.target.value,
+                          operators: event.target.value,
                         }))
                       }
                       className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm text-[#26364d] outline-none transition focus:border-[#6c4ce8]"
@@ -725,7 +692,6 @@ const Machine = () => {
                   </div>
                 </div>
 
-                {/* Status */}
                 <div>
                   <label className="mb-2 block text-xs font-semibold text-[#26364d]">
                     Status
@@ -733,10 +699,10 @@ const Machine = () => {
 
                   <select
                     value={form.status}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
-                        status: e.target.value,
+                        status: event.target.value,
                       }))
                     }
                     className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm text-[#26364d] outline-none transition focus:border-[#6c4ce8]"
@@ -747,7 +713,6 @@ const Machine = () => {
                 </div>
               </div>
 
-              {/* Modal Footer */}
               <div className="mt-6 flex justify-end gap-2 border-t border-[#e3e6eb] pt-4">
                 <button
                   type="button"
@@ -770,9 +735,7 @@ const Machine = () => {
         </div>
       )}
 
-      {/* =====================================================
-          TOAST
-      ===================================================== */}
+      {/* TOAST */}
 
       {toast && (
         <div className="fixed bottom-6 right-6 z-[1000] rounded-lg border-l-4 border-[#10b981] bg-[#202938] px-5 py-3 text-xs font-medium text-white shadow-xl">
@@ -780,54 +743,6 @@ const Machine = () => {
         </div>
       )}
     </div>
-  );
-};
-
-/* =====================================================
-   TABLE HEADER
-===================================================== */
-
-const TableHeader = ({ children }) => {
-  return (
-    <th className="border-r border-[#e1e4e8] px-4 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0">
-      {children}
-    </th>
-  );
-};
-
-/* =====================================================
-   TABLE CELL
-===================================================== */
-
-const TableCell = ({ children }) => {
-  return (
-    <td className="border-r border-[#edf0f2] px-4 py-3 text-[14px] text-[#44556c] last:border-r-0">
-      {children}
-    </td>
-  );
-};
-
-/* =====================================================
-   STATUS BADGE
-===================================================== */
-
-const StatusBadge = ({ status }) => {
-  const isActive = status?.toLowerCase() === "active";
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
-        isActive ? "bg-green-100 text-green-600" : "bg-[#f5f6f8] text-[#718096]"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          isActive ? "bg-green-600" : "bg-[#9aa3af]"
-        }`}
-      />
-
-      {isActive ? "Active" : "Inactive"}
-    </span>
   );
 };
 

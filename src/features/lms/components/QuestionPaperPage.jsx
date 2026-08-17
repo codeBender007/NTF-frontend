@@ -84,10 +84,11 @@ const QuestionPaperPage = ({ level = "L0" }) => {
   const navigate = useNavigate();
   const storageKey = `${level.toLowerCase()}_question_paper`;
   const previewPath = `/lms/${level.toLowerCase()}/preview`;
+  const levelLabel = level === "L0" ? "Day 1" : "Day 2";
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState(`${level} Papers`);
+  const [activeMenu, setActiveMenu] = useState(`${levelLabel} Papers`);
 
   const [sections, setSections] = useState(() => loadPaper(storageKey));
   const [selectedSection, setSelectedSection] = useState(
@@ -260,7 +261,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <div className="sticky top-0 z-30 bg-white shadow-xs">
-          <Navbar activeMenu={`LMS / ${level}`} setMobileOpen={setMobileOpen} />
+          <Navbar activeMenu={`LMS / ${levelLabel}`} setMobileOpen={setMobileOpen} />
         </div>
 
         {toast && (
@@ -273,7 +274,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F4F5F9] space-y-5">
           {/* Top Actions Sticky Header Bar */}
           <TopActions
-            title={`${level} Question Paper Editor`}
+            title={`${levelLabel} Question Paper Editor`}
             level={level}
             totalQuestions={totalQuestions}
             totalMarks={totalMarks}

@@ -1,41 +1,9 @@
 import { useState } from "react";
-// import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
-// import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
-// import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
-// import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import Filters from "../../../components/Filters";
-// import KPICards from "../../../components/KPICards";
 import RequirementTable from "../components/RequirementTable";
 import { dashboardMenus } from "../data/DashboardMenu";
-
-// const kpiData = [
-//   {
-//     title: "Total Requirements",
-//     value: 452,
-//     color: "blue",
-//     icon: <AssignmentOutlinedIcon sx={{ fontSize: 24 }} />,
-//   },
-//   {
-//     title: "Approved",
-//     value: 430,
-//     color: "green",
-//     icon: <CheckCircleOutlineOutlinedIcon sx={{ fontSize: 24 }} />,
-//   },
-//   {
-//     title: "Pending",
-//     value: 15,
-//     color: "orange",
-//     icon: <PendingActionsOutlinedIcon sx={{ fontSize: 24 }} />,
-//   },
-//   {
-//     title: "Rejected",
-//     value: 7,
-//     color: "red",
-//     icon: <HighlightOffOutlinedIcon sx={{ fontSize: 24 }} />,
-//   },
-// ];
 
 const Requirement = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -61,7 +29,6 @@ const Requirement = () => {
 
         <main className="flex-1 overflow-y-auto p-6">
           <Filters />
-          {/* <KPICards data={kpiData} /> */}
           <RequirementTable />
         </main>
       </div>

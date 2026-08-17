@@ -1,6 +1,5 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
 import {
   ArrowLeft,
   Plus,
@@ -14,29 +13,33 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-
 import KPICards from "../../../components/KPICards";
 import LinesTable from "./LinesTable";
 import Filters from "../../../components/Filters";
 
 const STORAGE_KEY = "lms_departments";
+const ITEMS_PER_PAGE = 4;
 
 const createId = (prefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+const loadDepartments = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+};
 
 const Section = () => {
   const navigate = useNavigate();
   const { deptId } = useParams();
 
-  /* =========================================================
-     STATE
-  ========================================================= */
+  const [departments, setDepartments] = useState(loadDepartments);
 
-  // Used to tell React that localStorage has changed
-  const [storageVersion, setStorageVersion] = useState(0);
-
-  const [search] = useState("");
-  const [statusFilter] = useState("All");
+  // Search and status filters are reserved for future use (no UI yet).
+  const search = "";
+  const statusFilter = "All";
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -73,34 +76,17 @@ const Section = () => {
     machine: "",
   });
 
-  const itemsPerPage = 4;
-
   /* =========================================================
-     LOAD SELECTED DEPARTMENT
-     
-     Instead of using useEffect + setDepartment(),
-     we derive the department directly from localStorage.
+     PREPARE DATA
   ========================================================= */
 
-  const department = useMemo(() => {
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  // The department opened by the URL (/lms/section/:deptId)
+  const department =
+    departments.find((item) => String(item.id) === String(deptId)) || null;
 
-      return data.find((item) => String(item.id) === String(deptId)) || null;
-    } catch (error) {
-      console.error("Unable to load department:", error);
-      return null;
-    }
-  }, [deptId, storageVersion]);
-
-  /* =========================================================
-     PREPARE SECTION DATA
-  ========================================================= */
-
-  const sections = useMemo(() => {
-    if (!department?.sections) return [];
-
-    return department.sections.map((section, index) => {
+  // Sections with a few derived fields (serial, machines, status, etc.)
+  const sections =
+    department?.sections?.map((section, index) => {
       let totalMachines = 0;
 
       section.lines?.forEach((line) => {
@@ -111,15 +97,10 @@ const Section = () => {
 
       return {
         ...section,
-
         serial: index + 1,
-
         totalMachines,
-
         status: section.status || "Active",
-
         createdAt: section.createdAt || "12 Apr 2025",
-
         code:
           section.code ||
           `${String(section.name || "SEC")
@@ -127,83 +108,71 @@ const Section = () => {
             .substring(0, 3)
             .toUpperCase()}-${String(index + 1).padStart(2, "0")}`,
       };
-    });
-  }, [department]);
+    }) || [];
 
-  /* =========================================================
-     FILTER OPTIONS
-  ========================================================= */
+  const unique = (list) => [...new Set(list.filter(Boolean))];
 
-  const filterOptions = useMemo(() => {
-    if (!department)
-      return { departments: [], sections: [], lines: [], machines: [] };
-    const unique = (list) => [...new Set(list.filter(Boolean))];
+  const allSectionNames = [];
+  const allLineNames = [];
+  const allMachineNames = [];
 
-    const sectionsList = [];
-    const linesList = [];
-    const machinesList = [];
+  (department?.sections || []).forEach((section) => {
+    allSectionNames.push(section.name);
 
-    (department.sections || []).forEach((section) => {
-      sectionsList.push(section.name);
-      (section.lines || []).forEach((line) => {
-        linesList.push(line.name);
-        (line.subSections || []).forEach((subSection) => {
-          (subSection.machines || []).forEach((machine) => {
-            machinesList.push(machine.name);
-          });
+    (section.lines || []).forEach((line) => {
+      allLineNames.push(line.name);
+
+      (line.subSections || []).forEach((subSection) => {
+        (subSection.machines || []).forEach((machine) => {
+          allMachineNames.push(machine.name);
         });
       });
     });
+  });
 
-    return {
-      departments: [department.name],
-      sections: unique(sectionsList),
-      lines: unique(linesList),
-      machines: unique(machinesList),
-    };
-  }, [department]);
+  const filterOptions = {
+    departments: department ? [department.name] : [],
+    sections: unique(allSectionNames),
+    lines: unique(allLineNames),
+    machines: unique(allMachineNames),
+  };
 
-  /* =========================================================
-     FILTER SECTIONS
-  ========================================================= */
+  const filteredSections = sections.filter((section) => {
+    const searchText = search.toLowerCase().trim();
 
-  const filteredSections = useMemo(() => {
-    return sections.filter((section) => {
-      const searchText = search.toLowerCase().trim();
+    const matchesSearch =
+      section.name?.toLowerCase().includes(searchText) ||
+      section.code?.toLowerCase().includes(searchText);
 
-      const matchesSearch =
-        section.name?.toLowerCase().includes(searchText) ||
-        section.code?.toLowerCase().includes(searchText);
+    const matchesStatus =
+      statusFilter === "All" ||
+      section.status?.toLowerCase() === statusFilter.toLowerCase();
 
-      const matchesStatus =
-        statusFilter === "All" ||
-        section.status?.toLowerCase() === statusFilter.toLowerCase();
+    const matchesSection =
+      !filterValues.subDepartment || section.name === filterValues.subDepartment;
 
-      const matchesSection =
-        !filterValues.subDepartment ||
-        section.name === filterValues.subDepartment;
+    const hasLine =
+      !filterValues.line ||
+      section.lines?.some((line) => line.name === filterValues.line);
 
-      const hasLine =
-        !filterValues.line ||
-        section.lines?.some((l) => l.name === filterValues.line);
-
-      const hasMachine =
-        !filterValues.machine ||
-        section.lines?.some((l) =>
-          l.subSections?.some((s) =>
-            s.machines?.some((m) => m.name === filterValues.machine),
+    const hasMachine =
+      !filterValues.machine ||
+      section.lines?.some((line) =>
+        line.subSections?.some((subSection) =>
+          subSection.machines?.some(
+            (machine) => machine.name === filterValues.machine,
           ),
-        );
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesSection &&
-        hasLine &&
-        hasMachine
+        ),
       );
-    });
-  }, [sections, search, statusFilter, filterValues]);
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesSection &&
+      hasLine &&
+      hasMachine
+    );
+  });
 
   /* =========================================================
      PAGINATION
@@ -211,12 +180,12 @@ const Section = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredSections.length / itemsPerPage),
+    Math.ceil(filteredSections.length / ITEMS_PER_PAGE),
   );
 
   const paginatedSections = filteredSections.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
   );
 
   /* =========================================================
@@ -229,9 +198,7 @@ const Section = () => {
     (section) => section.status?.toLowerCase() === "active",
   ).length;
 
-  const inactiveSections = sections.filter(
-    (section) => section.status?.toLowerCase() !== "active",
-  ).length;
+  const inactiveSections = sections.length - activeSections;
 
   const kpiData = [
     {
@@ -253,6 +220,18 @@ const Section = () => {
       icon: <Activity size={20} />,
     },
   ];
+
+  /* =========================================================
+     TOAST
+  ========================================================= */
+
+  const showToast = (message) => {
+    setToast(message);
+
+    setTimeout(() => {
+      setToast("");
+    }, 2500);
+  };
 
   /* =========================================================
      TOGGLE SECTION
@@ -277,54 +256,35 @@ const Section = () => {
 
     if (!confirmed) return;
 
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const next = departments.map((dept) =>
+      String(dept.id) !== String(department.id)
+        ? dept
+        : {
+            ...dept,
+            sections: (dept.sections || []).filter(
+              (section) => String(section.id) !== String(sectionId),
+            ),
+          },
+    );
 
-      const updatedData = data.map((dept) => {
-        if (String(dept.id) !== String(department.id)) {
-          return dept;
-        }
+    setDepartments(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 
-        return {
-          ...dept,
-
-          sections: (dept.sections || []).filter(
-            (section) => String(section.id) !== String(sectionId),
-          ),
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-
-      /*
-       * Refresh department data from localStorage.
-       * This replaces the old setDepartment() call.
-       */
-      setStorageVersion((version) => version + 1);
-
-      if (String(expandedSectionId) === String(sectionId)) {
-        setExpandedSectionId(null);
-      }
-
-      /*
-       * Make sure current page does not go beyond
-       * the available pages after deletion.
-       */
-      const updatedDepartment = updatedData.find(
-        (dept) => String(dept.id) === String(department.id),
-      );
-
-      const updatedSections = updatedDepartment?.sections || [];
-
-      const newTotalPages = Math.max(
-        1,
-        Math.ceil(updatedSections.length / itemsPerPage),
-      );
-
-      setCurrentPage((page) => Math.min(page, newTotalPages));
-    } catch (error) {
-      console.error("Unable to delete section:", error);
+    if (String(expandedSectionId) === String(sectionId)) {
+      setExpandedSectionId(null);
     }
+
+    // Keep the current page within the available pages after deletion.
+    const remainingSections = (department.sections || []).filter(
+      (section) => String(section.id) !== String(sectionId),
+    ).length;
+
+    const newTotalPages = Math.max(
+      1,
+      Math.ceil(remainingSections / ITEMS_PER_PAGE),
+    );
+
+    setCurrentPage((page) => Math.min(page, newTotalPages));
   };
 
   /* =========================================================
@@ -333,18 +293,6 @@ const Section = () => {
 
   const handleEdit = (section) => {
     navigate(`/lms/section/edit/${department?.id}/${section.id}`);
-  };
-
-  /* =========================================================
-     TOAST
-  ========================================================= */
-
-  const showToast = (message) => {
-    setToast(message);
-
-    setTimeout(() => {
-      setToast("");
-    }, 2500);
   };
 
   /* =========================================================
@@ -378,62 +326,49 @@ const Section = () => {
       return;
     }
 
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const duplicate = departments.some((dept) =>
+      (dept.sections || []).some(
+        (section) =>
+          String(section.code || "").toLowerCase() === code.toLowerCase(),
+      ),
+    );
 
-      const duplicate = data.some((dept) =>
-        (dept.sections || []).some(
-          (section) =>
-            String(section.code || "").toLowerCase() === code.toLowerCase(),
-        ),
-      );
-
-      if (duplicate) {
-        showToast("Section UniCode already exists.");
-        return;
-      }
-
-      const updatedData = data.map((dept) => {
-        if (String(dept.id) !== String(department.id)) {
-          return dept;
-        }
-
-        const now = new Date();
-
-        const createdAt = now.toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
-
-        return {
-          ...dept,
-          sections: [
-            ...(dept.sections || []),
-            {
-              id: createId("section"),
-              name,
-              code,
-              description: sectionForm.description.trim(),
-              category: sectionForm.category,
-              status: "Active",
-              createdAt,
-              lines: [],
-            },
-          ],
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-
-      setStorageVersion((version) => version + 1);
-
-      setSectionModal(false);
-
-      showToast("Section created successfully.");
-    } catch (error) {
-      console.error("Unable to create section:", error);
+    if (duplicate) {
+      showToast("Section UniCode already exists.");
+      return;
     }
+
+    const createdAt = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    const next = departments.map((dept) =>
+      String(dept.id) !== String(department.id)
+        ? dept
+        : {
+            ...dept,
+            sections: [
+              ...(dept.sections || []),
+              {
+                id: createId("section"),
+                name,
+                code,
+                description: sectionForm.description.trim(),
+                category: sectionForm.category,
+                status: "Active",
+                createdAt,
+                lines: [],
+              },
+            ],
+          },
+    );
+
+    setDepartments(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setSectionModal(false);
+    showToast("Section created successfully.");
   };
 
   /* =========================================================
@@ -471,100 +406,62 @@ const Section = () => {
       return;
     }
 
-    try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-      const duplicate = data.some((dept) =>
-        (dept.sections || []).some((section) =>
-          (section.lines || []).some(
-            (line) =>
-              String(line.code || "").toLowerCase() === code.toLowerCase(),
-          ),
+    const duplicate = departments.some((dept) =>
+      (dept.sections || []).some((section) =>
+        (section.lines || []).some(
+          (line) =>
+            String(line.code || "").toLowerCase() === code.toLowerCase(),
         ),
-      );
-
-      if (duplicate) {
-        showToast("Line UniCode already exists.");
-        return;
-      }
-
-      const updatedData = data.map((dept) => {
-        if (String(dept.id) !== String(department.id)) {
-          return dept;
-        }
-
-        return {
-          ...dept,
-          sections: (dept.sections || []).map((section) => {
-            if (String(section.id) !== String(lineTargetSection.id)) {
-              return section;
-            }
-
-            return {
-              ...section,
-              lines: [
-                ...(section.lines || []),
-                {
-                  id: createId("line"),
-                  name,
-                  code,
-                  leaders: lineForm.leaders.trim(),
-                  mentor: lineForm.mentor.trim(),
-                  requirement: lineForm.requirement.trim(),
-                  description: lineForm.description.trim(),
-                  subSections: [],
-                },
-              ],
-            };
-          }),
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-
-      setStorageVersion((version) => version + 1);
-
-      setLineModal(false);
-      setLineTargetSection(null);
-
-      showToast("Line created successfully.");
-    } catch (error) {
-      console.error("Unable to create line:", error);
-    }
-  };
-
-  /*
-    Connect your Line Add page here later.
-
-    Example:
-
-    navigate(
-      `/lms/line/add/${department.id}/${section.id}`
+      ),
     );
-  */
 
-  /* =========================================================
-     EDIT LINE
-  ========================================================= */
+    if (duplicate) {
+      showToast("Line UniCode already exists.");
+      return;
+    }
 
-  const handleEditLine = (section, line) => {
-    console.log("Edit line:", line, "Section:", section);
+    const next = departments.map((dept) =>
+      String(dept.id) !== String(department.id)
+        ? dept
+        : {
+            ...dept,
+            sections: (dept.sections || []).map((section) =>
+              String(section.id) !== String(lineTargetSection.id)
+                ? section
+                : {
+                    ...section,
+                    lines: [
+                      ...(section.lines || []),
+                      {
+                        id: createId("line"),
+                        name,
+                        code,
+                        leaders: lineForm.leaders.trim(),
+                        mentor: lineForm.mentor.trim(),
+                        requirement: lineForm.requirement.trim(),
+                        description: lineForm.description.trim(),
+                        subSections: [],
+                      },
+                    ],
+                  },
+            ),
+          },
+    );
 
-    /*
-      Connect your Line Edit page here later.
-    */
+    setDepartments(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setLineModal(false);
+    setLineTargetSection(null);
+    showToast("Line created successfully.");
   };
 
-  /* =========================================================
-     DELETE LINE
-  ========================================================= */
+  // Line edit / delete pages can be connected here later.
+  const handleEditLine = (line) => {
+    console.log("Edit line:", line);
+  };
 
-  const handleDeleteLine = (section, line) => {
-    console.log("Delete line:", line, "Section:", section);
-
-    /*
-      Connect your Line delete logic here later.
-    */
+  const handleDeleteLine = (line) => {
+    console.log("Delete line:", line);
   };
 
   /* =========================================================
@@ -607,9 +504,8 @@ const Section = () => {
     <div className="text-[#26364d]">
       <section className="p-4 sm:p-[30px_25px]">
         <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
-          {/* =====================================================
-              HEADER
-          ===================================================== */}
+          {/* HEADER */}
+
           <div className="flex flex-col gap-4 border-b border-[#edf0f3] px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6c4ce8] to-[#8b6ffe] text-white shadow-md shadow-[#6c4ce8]/30">
@@ -646,9 +542,8 @@ const Section = () => {
             </div>
           </div>
 
-          {/* =====================================================
-            FILTERS
-        ===================================================== */}
+          {/* FILTERS */}
+
           <div className="m-4 sm:m-5">
             <Filters
               values={filterValues}
@@ -662,20 +557,15 @@ const Section = () => {
             />
           </div>
 
-          {/* =====================================================
-            KPI CARDS
-        ===================================================== */}
+          {/* KPI CARDS */}
+
           <div className="mx-4 mb-4 sm:mx-5 sm:mb-5">
             <KPICards data={kpiData} />
           </div>
 
-          {/* =====================================================
-            SECTION TABLE
-        ===================================================== */}
+          {/* SECTION TABLE */}
 
           <div className="mx-4 mb-4 overflow-hidden rounded-[14px] border border-[#e3e6eb] sm:mx-5 sm:mb-5">
-            {/* TABLE HEADER */}
-
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0f3] px-4 py-4 sm:px-5 sm:py-[18px]">
               <div>
                 <h2 className="text-[18px] font-bold text-[#26364d]">
@@ -684,33 +574,40 @@ const Section = () => {
               </div>
             </div>
 
-            {/* TABLE */}
-
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] border-collapse">
                 <thead>
                   <tr className="bg-[#f5f6f8]">
-                    <TableHeader>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
                       <span className="sr-only">Expand</span>
-                    </TableHeader>
-
-                    <TableHeader>#</TableHeader>
-
-                    <TableHeader>Section Name</TableHeader>
-
-                    <TableHeader>Department</TableHeader>
-
-                    <TableHeader>Total Machines</TableHeader>
-
-                    <TableHeader>Description</TableHeader>
-
-                    <TableHeader>Category</TableHeader>
-
-                    <TableHeader>Status</TableHeader>
-
-                    <TableHeader>Created At</TableHeader>
-
-                    <TableHeader>Actions</TableHeader>
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      #
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Section Name
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Department
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Total Machines
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Description
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Category
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Status
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Created At
+                    </th>
+                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -738,17 +635,28 @@ const Section = () => {
                       const isExpanded =
                         String(expandedSectionId) === String(section.id);
 
+                      const isActive =
+                        section.status?.toLowerCase() === "active";
+
+                      const categoryValue = String(section.category || "").toLowerCase();
+                      const categoryClasses =
+                        categoryValue === "indirect"
+                          ? "bg-[#f0ecff] text-[#6c4ce8]"
+                          : categoryValue === "not applicable"
+                            ? "bg-[#eef7ff] text-[#3182ce]"
+                            : "bg-[#f5f6f8] text-[#718096]";
+
                       return (
                         <Fragment key={section.id || index}>
                           {/* SECTION ROW */}
 
                           <tr
                             className={`group border-b border-[#edf0f2] transition ${
-                              isExpanded ? "bg-[#fafaff]" : "hover:bg-[#fafaff]"
+                              isExpanded
+                                ? "bg-[#fafaff]"
+                                : "hover:bg-[#fafaff]"
                             }`}
                           >
-                            {/* EXPAND */}
-
                             <td className="py-3 pl-4">
                               <button
                                 type="button"
@@ -768,13 +676,9 @@ const Section = () => {
                               </button>
                             </td>
 
-                            {/* SERIAL */}
-
-                            <TableCell>
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </TableCell>
-
-                            {/* SECTION NAME */}
+                            <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
+                              {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                            </td>
 
                             <td className="px-3 py-3 sm:px-4">
                               <button
@@ -792,15 +696,11 @@ const Section = () => {
                               </button>
                             </td>
 
-                            {/* DEPARTMENT */}
-
                             <td className="px-3 py-3 sm:px-4">
                               <p className="max-w-[150px] text-[14px] font-medium leading-5 text-[#44556c]">
                                 {department.name}
                               </p>
                             </td>
-
-                            {/* MACHINES */}
 
                             <td className="px-3 py-3 sm:px-4">
                               <span className="text-[14px] font-bold text-[#6c4ce8]">
@@ -808,27 +708,37 @@ const Section = () => {
                               </span>
                             </td>
 
-                            {/* DESCRIPTION */}
-
-                            <TableCell>
+                            <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
                               <p className="max-w-[180px] truncate text-[13px] leading-5 text-[#718096]">
                                 {section.description || "—"}
                               </p>
-                            </TableCell>
-
-                            {/* CATEGORY */}
-
-                            <TableCell>
-                              <CategoryBadge category={section.category} />
-                            </TableCell>
-
-                            {/* STATUS */}
-
-                            <td className="px-3 py-3 sm:px-4">
-                              <StatusBadge status={section.status} />
                             </td>
 
-                            {/* CREATED */}
+                            <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-semibold ${categoryClasses}`}
+                              >
+                                {section.category || "—"}
+                              </span>
+                            </td>
+
+                            <td className="px-3 py-3 sm:px-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
+                                  isActive
+                                    ? "bg-green-100 text-green-600"
+                                    : "bg-[#f5f6f8] text-[#718096]"
+                                }`}
+                              >
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    isActive ? "bg-green-600" : "bg-[#9aa3af]"
+                                  }`}
+                                />
+
+                                {isActive ? "Active" : "Inactive"}
+                              </span>
+                            </td>
 
                             <td className="px-3 py-3 sm:px-4">
                               <div>
@@ -842,12 +752,8 @@ const Section = () => {
                               </div>
                             </td>
 
-                            {/* ACTIONS */}
-
                             <td className="px-3 py-3 sm:px-4">
                               <div className="flex gap-2">
-                                {/* EDIT */}
-
                                 <button
                                   type="button"
                                   onClick={() => handleEdit(section)}
@@ -856,8 +762,6 @@ const Section = () => {
                                 >
                                   <Pencil size={15} />
                                 </button>
-
-                                {/* DELETE */}
 
                                 <button
                                   type="button"
@@ -871,9 +775,7 @@ const Section = () => {
                             </td>
                           </tr>
 
-                          {/* =================================================
-                              EXPANDED LINE TABLE
-                          ================================================= */}
+                          {/* EXPANDED LINE TABLE */}
 
                           {isExpanded && (
                             <tr className="border-b border-[#edf0f2] bg-[#fafaff]">
@@ -883,11 +785,9 @@ const Section = () => {
                                   sectionId={section.id}
                                   lines={section.lines || []}
                                   onAddLine={() => openAddLine(section)}
-                                  onEditLine={(line) =>
-                                    handleEditLine(section, line)
-                                  }
+                                  onEditLine={(line) => handleEditLine(line)}
                                   onDeleteLine={(line) =>
-                                    handleDeleteLine(section, line)
+                                    handleDeleteLine(line)
                                   }
                                 />
                               </td>
@@ -901,9 +801,7 @@ const Section = () => {
               </table>
             </div>
 
-            {/* =====================================================
-              PAGINATION
-          ===================================================== */}
+            {/* PAGINATION */}
 
             <div className="flex flex-col gap-3 border-t border-[#edf0f3] px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
               <p className="text-xs text-[#718096]">
@@ -911,12 +809,12 @@ const Section = () => {
                 <span className="font-semibold text-[#26364d]">
                   {filteredSections.length === 0
                     ? 0
-                    : (currentPage - 1) * itemsPerPage + 1}
+                    : (currentPage - 1) * ITEMS_PER_PAGE + 1}
                 </span>{" "}
                 to{" "}
                 <span className="font-semibold text-[#26364d]">
                   {Math.min(
-                    currentPage * itemsPerPage,
+                    currentPage * ITEMS_PER_PAGE,
                     filteredSections.length,
                   )}
                 </span>{" "}
@@ -928,8 +826,6 @@ const Section = () => {
               </p>
 
               <div className="flex flex-wrap items-center gap-1">
-                {/* PREVIOUS */}
-
                 <button
                   disabled={currentPage === 1}
                   onClick={() =>
@@ -941,12 +837,8 @@ const Section = () => {
                   Previous
                 </button>
 
-                {/* PAGE NUMBERS */}
-
                 {Array.from(
-                  {
-                    length: totalPages,
-                  },
+                  { length: totalPages },
                   (_, index) => index + 1,
                 ).map((page) => (
                   <button
@@ -961,8 +853,6 @@ const Section = () => {
                     {page}
                   </button>
                 ))}
-
-                {/* NEXT */}
 
                 <button
                   disabled={currentPage === totalPages}
@@ -980,9 +870,7 @@ const Section = () => {
         </div>
       </section>
 
-      {/* =====================================================
-          ADD SECTION MODAL
-      ===================================================== */}
+      {/* ADD SECTION MODAL */}
 
       {sectionModal && (
         <div
@@ -1023,10 +911,10 @@ const Section = () => {
                   <input
                     autoFocus
                     value={sectionForm.name}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setSectionForm((prev) => ({
                         ...prev,
-                        name: e.target.value,
+                        name: event.target.value,
                       }))
                     }
                     placeholder="Enter section name"
@@ -1042,10 +930,10 @@ const Section = () => {
 
                   <input
                     value={sectionForm.code}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setSectionForm((prev) => ({
                         ...prev,
-                        code: e.target.value,
+                        code: event.target.value,
                       }))
                     }
                     placeholder="Enter unique code"
@@ -1061,10 +949,10 @@ const Section = () => {
 
                   <textarea
                     value={sectionForm.description}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setSectionForm((prev) => ({
                         ...prev,
-                        description: e.target.value,
+                        description: event.target.value,
                       }))
                     }
                     placeholder="Enter description"
@@ -1080,10 +968,10 @@ const Section = () => {
 
                   <select
                     value={sectionForm.category}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setSectionForm((prev) => ({
                         ...prev,
-                        category: e.target.value,
+                        category: event.target.value,
                       }))
                     }
                     className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm text-[#26364d] outline-none transition focus:border-[#6c4ce8]"
@@ -1115,9 +1003,7 @@ const Section = () => {
         </div>
       )}
 
-      {/* =====================================================
-          ADD LINE MODAL
-      ===================================================== */}
+      {/* ADD LINE MODAL */}
 
       {lineModal && (
         <div
@@ -1158,10 +1044,10 @@ const Section = () => {
                   <input
                     autoFocus
                     value={lineForm.name}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        name: e.target.value,
+                        name: event.target.value,
                       }))
                     }
                     placeholder="Enter line name"
@@ -1177,10 +1063,10 @@ const Section = () => {
 
                   <input
                     value={lineForm.code}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        code: e.target.value,
+                        code: event.target.value,
                       }))
                     }
                     placeholder="Enter unique code"
@@ -1195,10 +1081,10 @@ const Section = () => {
 
                   <input
                     value={lineForm.leaders}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        leaders: e.target.value,
+                        leaders: event.target.value,
                       }))
                     }
                     placeholder="Enter line leader(s)"
@@ -1213,10 +1099,10 @@ const Section = () => {
 
                   <input
                     value={lineForm.mentor}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        mentor: e.target.value,
+                        mentor: event.target.value,
                       }))
                     }
                     placeholder="Enter mentor name"
@@ -1231,10 +1117,10 @@ const Section = () => {
 
                   <input
                     value={lineForm.requirement}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        requirement: e.target.value,
+                        requirement: event.target.value,
                       }))
                     }
                     placeholder="Enter requirement"
@@ -1249,10 +1135,10 @@ const Section = () => {
 
                   <textarea
                     value={lineForm.description}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setLineForm((prev) => ({
                         ...prev,
-                        description: e.target.value,
+                        description: event.target.value,
                       }))
                     }
                     placeholder="Enter description"
@@ -1282,9 +1168,7 @@ const Section = () => {
         </div>
       )}
 
-      {/* =====================================================
-          TOAST
-      ===================================================== */}
+      {/* TOAST */}
 
       {toast && (
         <div className="fixed bottom-4 right-4 z-[1000] max-w-[calc(100vw-2rem)] rounded-lg border-l-4 border-[#10b981] bg-[#202938] px-5 py-3 text-xs font-medium text-white shadow-xl sm:bottom-6 sm:right-6">
@@ -1292,77 +1176,6 @@ const Section = () => {
         </div>
       )}
     </div>
-  );
-};
-
-/* ============================================================
-   TABLE HEADER
-============================================================ */
-
-const TableHeader = ({ children }) => {
-  return (
-    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-      {children}
-    </th>
-  );
-};
-
-/* ============================================================
-   TABLE CELL
-============================================================ */
-
-const TableCell = ({ children }) => {
-  return (
-    <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-      {children}
-    </td>
-  );
-};
-
-/* ============================================================
-   STATUS BADGE
-============================================================ */
-
-const StatusBadge = ({ status }) => {
-  const isActive = status?.toLowerCase() === "active";
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
-        isActive ? "bg-green-100 text-green-600" : "bg-[#f5f6f8] text-[#718096]"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          isActive ? "bg-green-600" : "bg-[#9aa3af]"
-        }`}
-      />
-
-      {isActive ? "Active" : "Inactive"}
-    </span>
-  );
-};
-
-/* ============================================================
-   CATEGORY BADGE
-============================================================ */
-
-const CategoryBadge = ({ category }) => {
-  const value = String(category || "").toLowerCase();
-
-  const classes =
-    value === "indirect"
-      ? "bg-[#f0ecff] text-[#6c4ce8]"
-      : value === "not applicable"
-        ? "bg-[#eef7ff] text-[#3182ce]"
-        : "bg-[#f5f6f8] text-[#718096]";
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-semibold ${classes}`}
-    >
-      {category || "—"}
-    </span>
   );
 };
 

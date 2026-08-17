@@ -36,7 +36,6 @@ const LMS = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-
       <Sidebar
         menuItems={lmsMenus}
         mobileOpen={mobileOpen}
@@ -48,23 +47,15 @@ const LMS = () => {
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-
         <div className="sticky top-0 z-30 bg-white shadow-sm">
-          <Navbar
-            setMobileOpen={setMobileOpen}
-            activeMenu={activeMenu}
-          />
+          <Navbar setMobileOpen={setMobileOpen} activeMenu={activeMenu} />
         </div>
 
         <div className="sticky top-[64px] z-20">
-          <LMSTabs
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
+          <LMSTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-
           {activeTab === "Test Papers" && (
             <QuestionPaperTable
               onCreate={handleCreatePaper}
@@ -79,16 +70,12 @@ const LMS = () => {
             </div>
           )}
 
-           {activeTab === "Day 2" && (
+          {activeTab === "Day 2" && (
             <div className="rounded-xl border border-gray-200 bg-white p-6">
               Day 2
             </div>
           )}
-
-        
-
         </main>
-
       </div>
     </div>
   );

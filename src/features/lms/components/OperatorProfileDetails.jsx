@@ -71,127 +71,31 @@ const getInitials = (name = "") => {
   return initials || "OP";
 };
 
-const InfoRow = ({ icon: Icon, label, value, valueClass = "" }) => {
-  return (
-    <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-        <Icon sx={{ fontSize: 17 }} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-[#8B93A7]">{label}</p>
-        <p
-          className={`mt-1 text-[13px] font-semibold ${
-            valueClass || "text-[#252B3A]"
-          }`}
-        >
-          {value || "—"}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-const PrimaryInfo = ({ icon: Icon, label, value }) => {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-        <Icon sx={{ fontSize: 20 }} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-[#8B93A7]">{label}</p>
-
-        <p className="mt-0.5 truncate text-sm font-semibold text-[#252B3A]">
-          {value || "—"}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-const STATUS_PILL_STYLES = {
-  ACTIVE: "border-[#7BD6A4] bg-[#EEFBF4] text-[#16864A]",
-  "ON LEAVE": "border-[#FFD9A8] bg-[#FFF4E5] text-[#E6920B]",
-  LEFT: "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]",
-};
-
-const STATUS_DOT_STYLES = {
-  ACTIVE: "bg-[#16864A]",
-  "ON LEAVE": "bg-[#E6920B]",
-  LEFT: "bg-[#E74C3C]",
-};
-
-const StatusPill = ({ status }) => {
-  const normalized = (status || "").toUpperCase();
-
-  const styles =
-    STATUS_PILL_STYLES[normalized] ||
-    "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
-
-  const dot = STATUS_DOT_STYLES[normalized] || "bg-[#9AA3AF]";
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${styles}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      {status || "—"}
-    </span>
-  );
-};
-
-const FlowBox = ({ icon: Icon, label, value, color = "purple" }) => {
-  const colors = {
-    purple: {
-      bg: "bg-[#F5F2FF]",
-      border: "border-[#DDD5FF]",
-      icon: "text-[#6F4AE7]",
-      value: "text-[#4F46B5]",
-    },
-    blue: {
-      bg: "bg-[#F2F6FF]",
-      border: "border-[#D6E1FF]",
-      icon: "text-[#5575D9]",
-      value: "text-[#4457A8]",
-    },
-    red: {
-      bg: "bg-[#FFF4F4]",
-      border: "border-[#FFD3D3]",
-      icon: "text-[#FF4D4D]",
-      value: "text-[#FF4D4D]",
-    },
-    green: {
-      bg: "bg-[#EEFBF4]",
-      border: "border-[#C7EED8]",
-      icon: "text-[#1DA65B]",
-      value: "text-[#16864A]",
-    },
-  };
-
-  const c = colors[color];
-
-  return (
-    <div className={`rounded-lg border ${c.border} ${c.bg} px-2.5 py-2`}>
-      <div className="flex items-center gap-1.5">
-        <Icon sx={{ fontSize: 14 }} className={c.icon} />
-
-        <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-            {label}
-          </p>
-          <p className={`text-[11px] font-bold ${c.value}`}>{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const OperatorProfileDetails = ({ operator = defaultOperator }) => {
   const data = {
     ...defaultOperator,
     ...operator,
   };
+
+  const normalizedStatus = (data.status || "").toUpperCase();
+
+  const statusClasses =
+    normalizedStatus === "ACTIVE"
+      ? "border-[#7BD6A4] bg-[#EEFBF4] text-[#16864A]"
+      : normalizedStatus === "ON LEAVE"
+        ? "border-[#FFD9A8] bg-[#FFF4E5] text-[#E6920B]"
+        : normalizedStatus === "LEFT"
+          ? "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]"
+          : "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
+
+  const statusDotClasses =
+    normalizedStatus === "ACTIVE"
+      ? "bg-[#16864A]"
+      : normalizedStatus === "ON LEAVE"
+        ? "bg-[#E6920B]"
+        : normalizedStatus === "LEFT"
+          ? "bg-[#E74C3C]"
+          : "bg-[#9AA3AF]";
 
   return (
     <div className="space-y-4 p-3 md:p-4 lg:p-5">
@@ -233,7 +137,14 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                   {data.department}
                 </span>
 
-                <StatusPill status={data.status} />
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${statusDotClasses}`}
+                  />
+                  {data.status || "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -280,17 +191,37 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
           </div>
 
           <div className="space-y-2.5 p-4">
-            <PrimaryInfo
-              icon={EmailOutlinedIcon}
-              label="Email Address"
-              value={data.email}
-            />
+            <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                <EmailOutlinedIcon sx={{ fontSize: 20 }} />
+              </div>
 
-            <PrimaryInfo
-              icon={PhoneOutlinedIcon}
-              label="Mobile Number"
-              value={data.phone}
-            />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[#8B93A7]">
+                  Email Address
+                </p>
+
+                <p className="mt-0.5 truncate text-sm font-semibold text-[#252B3A]">
+                  {data.email || "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                <PhoneOutlinedIcon sx={{ fontSize: 20 }} />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[#8B93A7]">
+                  Mobile Number
+                </p>
+
+                <p className="mt-0.5 truncate text-sm font-semibold text-[#252B3A]">
+                  {data.phone || "—"}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -329,30 +260,65 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                   </h3>
                 </div>
 
-                <InfoRow
-                  icon={FamilyRestroomOutlinedIcon}
-                  label="Father / Husband"
-                  value={data.fatherHusband}
-                />
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <FamilyRestroomOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
 
-                <InfoRow
-                  icon={WcOutlinedIcon}
-                  label="Gender / DOB"
-                  value={`${data.gender} / ${data.dob}`}
-                />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      Father / Husband
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
+                      {data.fatherHusband || "—"}
+                    </p>
+                  </div>
+                </div>
 
-                <InfoRow
-                  icon={SchoolOutlinedIcon}
-                  label="Qualification"
-                  value={data.qualification}
-                  valueClass="inline-block rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[#5B3BE6]"
-                />
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <WcOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
 
-                <InfoRow
-                  icon={FlagOutlinedIcon}
-                  label="Joining Date"
-                  value={data.joiningDate}
-                />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      Gender / DOB
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
+                      {data.gender} / {data.dob}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <SchoolOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      Qualification
+                    </p>
+                    <p className="mt-1 inline-block rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[13px] font-semibold text-[#5B3BE6]">
+                      {data.qualification || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <FlagOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      Joining Date
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
+                      {data.joiningDate || "—"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* PROFESSIONAL */}
@@ -375,11 +341,23 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                   {/* Department */}
                   <div className="flex w-full items-center justify-center gap-2">
                     <div className="w-[115px]">
-                      <FlowBox
-                        icon={ApartmentOutlinedIcon}
-                        label="DEPT"
-                        value={data.department}
-                      />
+                      <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <ApartmentOutlinedIcon
+                            sx={{ fontSize: 14 }}
+                            className="text-[#6F4AE7]"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                              DEPT
+                            </p>
+                            <p className="text-[11px] font-bold text-[#4F46B5]">
+                              {data.department}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <ArrowForwardIosOutlinedIcon
@@ -387,11 +365,23 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                     />
 
                     <div className="relative w-[115px]">
-                      <FlowBox
-                        icon={AccountTreeOutlinedIcon}
-                        label="SECTION"
-                        value={data.section}
-                      />
+                      <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <AccountTreeOutlinedIcon
+                            sx={{ fontSize: 14 }}
+                            className="text-[#6F4AE7]"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                              SECTION
+                            </p>
+                            <p className="text-[11px] font-bold text-[#4F46B5]">
+                              {data.section}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
                       <span className="absolute -right-2 -top-2 rounded-full bg-[#6F4AE7] px-1.5 py-0.5 text-[7px] font-bold text-white">
                         Primary
@@ -404,55 +394,110 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
                   {/* Line */}
                   <div className="flex w-full justify-center">
-                    <FlowBox
-                      icon={ApartmentOutlinedIcon}
-                      label="LINE"
-                      value={data.line}
-                      color="blue"
-                    />
+                    <div className="rounded-lg border border-[#D6E1FF] bg-[#F2F6FF] px-2.5 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <ApartmentOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                          className="text-[#5575D9]"
+                        />
+
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                            LINE
+                          </p>
+                          <p className="text-[11px] font-bold text-[#4457A8]">
+                            {data.line}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
                   {/* Sub section */}
                   <div className="flex w-full justify-center">
-                    <FlowBox
-                      icon={LayersOutlinedIcon}
-                      label="SUB-SECT"
-                      value={data.subSection}
-                      color="purple"
-                    />
+                    <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <LayersOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                          className="text-[#6F4AE7]"
+                        />
+
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                            SUB-SECT
+                          </p>
+                          <p className="text-[11px] font-bold text-[#4F46B5]">
+                            {data.subSection}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
                   {/* Station + Level */}
                   <div className="grid w-full grid-cols-2 gap-2">
-                    <FlowBox
-                      icon={SettingsOutlinedIcon}
-                      label="STATION"
-                      value={data.station}
-                      color="red"
-                    />
+                    <div className="rounded-lg border border-[#FFD3D3] bg-[#FFF4F4] px-2.5 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <SettingsOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                          className="text-[#FF4D4D]"
+                        />
 
-                    <FlowBox
-                      icon={LayersOutlinedIcon}
-                      label="LEVEL"
-                      value={data.level}
-                      color="purple"
-                    />
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                            STATION
+                          </p>
+                          <p className="text-[11px] font-bold text-[#FF4D4D]">
+                            {data.station}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <LayersOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                          className="text-[#6F4AE7]"
+                        />
+
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                            LEVEL
+                          </p>
+                          <p className="text-[11px] font-bold text-[#4F46B5]">
+                            {data.level}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="h-3 w-px border-l border-dashed border-[#A5ACBA]" />
 
                   {/* Efficiency */}
                   <div className="w-1/2 min-w-[100px]">
-                    <FlowBox
-                      icon={SettingsOutlinedIcon}
-                      label="EFFICIENCY"
-                      value={data.efficiency}
-                      color="green"
-                    />
+                    <div className="rounded-lg border border-[#C7EED8] bg-[#EEFBF4] px-2.5 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <SettingsOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                          className="text-[#1DA65B]"
+                        />
+
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
+                            EFFICIENCY
+                          </p>
+                          <p className="text-[11px] font-bold text-[#16864A]">
+                            {data.efficiency}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -469,17 +514,35 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                   </h3>
                 </div>
 
-                <InfoRow
-                  icon={LocationOnOutlinedIcon}
-                  label="District & State"
-                  value={data.district}
-                />
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <LocationOnOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
 
-                <InfoRow
-                  icon={PinDropOutlinedIcon}
-                  label="PIN Code"
-                  value={data.pinCode}
-                />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      District & State
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
+                      {data.district || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+                    <PinDropOutlinedIcon sx={{ fontSize: 17 }} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-[#8B93A7]">
+                      PIN Code
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
+                      {data.pinCode || "—"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -538,7 +601,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
         </div>
       </section>
 
-      {/*LEARNING / TRAINING CARD */}
+      {/* LEARNING / TRAINING CARD */}
       <KPICards
         data={[
           {

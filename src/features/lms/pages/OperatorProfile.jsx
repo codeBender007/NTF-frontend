@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
@@ -15,20 +15,18 @@ const OperatorProfile = () => {
 
   const [operators] = useLocalStorage(OPERATORS_STORAGE_KEY, SEED_OPERATORS);
 
-  const operator = useMemo(() => {
-    const found = operators.find((item) => item.id === id);
+  const found = operators.find((item) => item.id === id);
 
-    if (!found) return undefined;
-
-    return {
-      name: found.name,
-      employeeId: found.empCode,
-      department: found.department,
-      status: found.status,
-      level: found.level,
-      phone: found.contact,
-    };
-  }, [operators, id]);
+  const operator = found
+    ? {
+        name: found.name,
+        employeeId: found.empCode,
+        department: found.department,
+        status: found.status,
+        level: found.level,
+        phone: found.contact,
+      }
+    : undefined;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">

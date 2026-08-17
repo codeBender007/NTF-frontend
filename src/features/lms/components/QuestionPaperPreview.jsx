@@ -26,6 +26,7 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
   const navigate = useNavigate();
   const storageKey = `${level.toLowerCase()}_question_paper`;
   const editorPath = `/lms/${level.toLowerCase()}`;
+  const levelLabel = level === "L0" ? "Day 1" : "Day 2";
   const [sections] = useState(() => loadSavedPaper(storageKey));
   const [showAnswerKey, setShowAnswerKey] = useState(false);
   const [paperMeta] = useState(() => {
@@ -44,20 +45,9 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
   );
 
   const testTitle = paperMeta.headerTitle || "SKILL EVALUATION TEST PAPER";
-  const subTitle = paperMeta.subTitle || `New Manpower for ${level}`;
+  const subTitle = paperMeta.subTitle || `New Manpower for ${levelLabel}`;
   const department = paperMeta.departments || "Production";
   const duration = paperMeta.duration || 60;
-
-  // Split questions into left/right two-column pairs per section
-  const splitIntoColumns = (questions) => {
-    const left = [];
-    const right = [];
-    questions.forEach((q, i) => {
-      if (i % 2 === 0) left.push(q);
-      else right.push(q);
-    });
-    return { left, right };
-  };
 
   return (
     <div className="min-h-screen bg-[#F5F7FB] print:bg-white">
@@ -250,9 +240,7 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
                 // split into left and right columns
                 const leftQs = qs.filter((_, i) => i % 2 === 0);
                 const rightQs = qs.filter((_, i) => i % 2 !== 0);
-                const rows = Math.max(leftQs.length, rightQs.length);
 
-                const getGlobalNum = (localIdx) => globalStart + localIdx;
                 const leftGlobalStart = (localIdx) => globalStart + localIdx * 2;
                 const rightGlobalStart = (localIdx) => globalStart + localIdx * 2 + 1;
 
@@ -274,7 +262,6 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
                       <div className="pr-4 border-r border-dashed border-gray-300 space-y-5 pt-4">
                         {leftQs.map((q, li) => {
                           const num = leftGlobalStart(li);
-                          const isCorrectVisible = showAnswerKey;
                           return (
                             <div key={q.id || li} className="space-y-1.5 break-inside-avoid">
                               {/* Question text */}
@@ -354,27 +341,7 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
               })
             )}
 
-            {/* ── Footer Signature Strip ── */}
-            {totalQuestions > 0 && (
-              <div className="pt-8 border-t border-gray-300 grid grid-cols-3 gap-6 text-[11px] text-gray-700">
-                <div>
-                  <span className="block font-bold text-gray-900 mb-1">Candidate Signature:</span>
-                  <div className="h-8 border-b border-dashed border-gray-400" />
-                </div>
-                <div>
-                  <span className="block font-bold text-gray-900 mb-1">Invigilator Signature:</span>
-                  <div className="h-8 border-b border-dashed border-gray-400" />
-                </div>
-                <div>
-                  <span className="block font-bold text-gray-900 mb-1">Marks Obtained:</span>
-                  <div className="h-8 border-b border-dashed border-gray-400 flex items-end justify-end font-bold text-gray-900">
-                    / {totalMarks}
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
+            </div>
         </div>
       </div>
 

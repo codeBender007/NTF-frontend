@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import { lmsMenus } from "../data/LMSMenu";
@@ -154,22 +154,18 @@ const Roles = () => {
   const selectedRole =
     rolesData.find((role) => role.id === selectedRoleId) || null;
 
-  const filteredRoles = useMemo(() => {
-    return rolesData.filter((role) =>
-      role.name.toLowerCase().includes(searchRole.toLowerCase()),
+  const filteredRoles = rolesData.filter((role) =>
+    role.name.toLowerCase().includes(searchRole.toLowerCase()),
+  );
+
+  const filteredModules = moduleData.filter((module) => {
+    const value = searchPermission.toLowerCase();
+
+    return (
+      module.title.toLowerCase().includes(value) ||
+      module.description.toLowerCase().includes(value)
     );
-  }, [searchRole]);
-
-  const filteredModules = useMemo(() => {
-    return moduleData.filter((module) => {
-      const value = searchPermission.toLowerCase();
-
-      return (
-        module.title.toLowerCase().includes(value) ||
-        module.description.toLowerCase().includes(value)
-      );
-    });
-  }, [searchPermission]);
+  });
 
   const togglePage = (moduleId) => {
     setPageAccess((prev) => ({

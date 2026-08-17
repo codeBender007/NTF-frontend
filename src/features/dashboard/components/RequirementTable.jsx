@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { TablePagination, IconButton, Tooltip } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import RequirementPopup from "./RequirementPopup";
 
 const requirementData = [
@@ -71,6 +72,15 @@ const RequirementTable = () => {
       row.lineDescription.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const displayedData = filteredData.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+  const from = filteredData.length === 0 ? 0 : page * rowsPerPage + 1;
+  const to = Math.min(filteredData.length, (page + 1) * rowsPerPage);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 py-4 border-b border-gray-100">
@@ -97,7 +107,6 @@ const RequirementTable = () => {
           <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
           Add Requirement
         </button>
-        <RequirementPopup open={open} onClose={() => setOpen(false)} />
       </div>
 
       <div className="overflow-x-auto">
@@ -151,7 +160,7 @@ const RequirementTable = () => {
           </thead>
 
           <tbody>
-            {filteredData.length === 0 && (
+            {displayedData.length === 0 && (
               <tr>
                 <td
                   colSpan={25}
@@ -162,100 +171,113 @@ const RequirementTable = () => {
               </tr>
             )}
 
-            {filteredData
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row, rowIdx) => {
-                const approval =
-                  approvalStyles[row.approval] || approvalStyles.Pending;
+            {displayedData.map((row, rowIdx) => {
+              const approval =
+                approvalStyles[row.approval] || approvalStyles.Pending;
 
-                return (
-                  <tr
-                    key={row.id}
-                    className={`whitespace-nowrap transition hover:bg-primary/5 ${
-                      rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
-                    }`}
-                  >
-                    <td className="px-4 py-3 text-xs font-medium text-gray-700 border-b border-r border-gray-100">
-                      {row.code}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-700 border-b border-r border-gray-100">
-                      {row.sectionName}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-700 border-b border-r border-gray-100">
-                      {row.lineDescription}
-                    </td>
-                    <td className="px-4 py-3 text-center border-b border-r border-gray-100">
+              return (
+                <tr
+                  key={row.id}
+                  className={`whitespace-nowrap transition hover:bg-primary/5 ${
+                    rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
+                  }`}
+                >
+                  <td className="px-4 py-3 text-xs font-medium text-gray-700 border-b border-r border-gray-100">
+                    {row.code}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700 border-b border-r border-gray-100">
+                    {row.sectionName}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700 border-b border-r border-gray-100">
+                    {row.lineDescription}
+                  </td>
+                  <td className="px-4 py-3 text-center border-b border-r border-gray-100">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${approval.badge}`}
+                    >
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${approval.badge}`}
+                        className={`h-1.5 w-1.5 rounded-full ${approval.dot}`}
+                      />
+                      {row.approval}
+                    </span>
+                  </td>
+
+                  {months.map((month) => {
+                    const data = row[month.toLowerCase()];
+                    const total = Object.values(data).reduce(
+                      (sum, value) => sum + value,
+                      0,
+                    );
+                    return (
+                      <td
+                        key={month}
+                        className="px-4 py-3 text-center text-xs tabular-nums text-gray-700 border-b border-r border-gray-100"
                       >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${approval.dot}`}
+                        {total}
+                      </td>
+                    );
+                  })}
+
+                  <td className="px-4 py-3 text-center border-b border-gray-100">
+                    <div className="flex items-center justify-center gap-0.5">
+                      <button
+                        type="button"
+                        title="Edit"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-gray-100 hover:text-primary"
+                      >
+                        <EditOutlinedIcon
+                          sx={{ color: "#F59E0B", fontSize: 18 }}
                         />
-                        {row.approval}
-                      </span>
-                    </td>
-                   
-
-                    {months.map((month) => {
-                      const data = row[month.toLowerCase()];
-                      const total = Object.values(data).reduce(
-                        (sum, value) => sum + value,
-                        0,
-                      );
-                      return (
-                        <td
-                          key={month}
-                          className="px-4 py-3 text-center text-xs tabular-nums text-gray-700 border-b border-r border-gray-100"
-                        >
-                          {total}
-                        </td>
-                      );
-                    })}
-
-                    <td className="px-4 py-3 text-center border-b border-gray-100">
-                      <div className="flex items-center justify-center gap-0.5">
-                     
-                        <Tooltip title="Edit">
-                          <IconButton size="small">
-                            <EditOutlinedIcon
-                              sx={{ color: "#F59E0B", fontSize: 18 }}
-                            />
-                          </IconButton>
-                        </Tooltip>
-                     
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
-        <TablePagination
-          component="div"
-          count={filteredData.length}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 25, 50]}
-          sx={{
-            borderTop: "1px solid #E5E7EB",
-            ".MuiTablePagination-toolbar": {
-              minHeight: "48px",
-            },
-            ".MuiTablePagination-selectLabel,.MuiTablePagination-displayedRows":
-              {
-                fontSize: "12px",
-                color: "#6B7280",
-              },
-            ".MuiTablePagination-select": {
-              borderRadius: "6px",
-              border: "1px solid #E5E7EB",
-              padding: "4px 8px",
-            },
-          }}
-        />
+        <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#E5E7EB] px-2">
+          <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
+            <span>Rows per page</span>
+
+            <select
+              value={rowsPerPage}
+              onChange={handleChangeRowsPerPage}
+              className="cursor-pointer rounded-md border border-[#E5E7EB] bg-white py-1 pl-2 pr-6 text-[11px] text-[#6B7280] outline-none focus:border-[#6F4AE7]"
+            >
+              {[10, 25, 50].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-[#6B7280]">
+              {from}-{to} of {filteredData.length}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => handleChangePage(null, page - 1)}
+              disabled={page === 0}
+              className="flex h-8 w-8 items-center justify-center rounded text-[#6B7280] transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <KeyboardArrowLeftIcon sx={{ fontSize: 20 }} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleChangePage(null, page + 1)}
+              disabled={page >= totalPages - 1}
+              className="flex h-8 w-8 items-center justify-center rounded text-[#6B7280] transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <KeyboardArrowRightIcon sx={{ fontSize: 20 }} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <RequirementPopup open={open} onClose={() => setOpen(false)} />
