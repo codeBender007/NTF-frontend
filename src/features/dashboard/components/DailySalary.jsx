@@ -1,4 +1,4 @@
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import PaymentsIcon from "@mui/icons-material/Payments";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
@@ -43,15 +43,27 @@ const chartData = {
   labels,
   datasets: [
     {
-      label: "Requirement",
+      label: "Regular Wages",
       data: [
-        45, 55, 40, 60, 50, 34, 60, 45,
-        55, 40, 60, 50, 34, 60, 55, 45,
+        140,
+        155,
+        130,
+        165,
+        150,
+        110,
+        160,
+        140,
+        155,
+        130,
+        165,
+        150,
+        110,
+        160,
+        155,
+        138,
       ],
-      backgroundColor: "#1D4ED8",
-
-      // Fixed thin bar width
-      barThickness: 22,
+      backgroundColor: "#002a3d",
+      barThickness: 28,
 
       borderRadius: {
         topLeft: 5,
@@ -64,6 +76,8 @@ const chartData = {
     },
   ],
 };
+
+const yAxisFormatter = (val) => `₹${val}k`;
 
 const options = {
   responsive: true,
@@ -79,7 +93,12 @@ const options = {
       display: false,
     },
 
-    // Numbers on top of every bar
+     tooltip: {
+      enabled: false,
+      external: () => {},
+    },
+
+    // Number displayed on top of every bar
     datalabels: {
       display: true,
       anchor: "end",
@@ -103,14 +122,10 @@ const options = {
     //   displayColors: true,
     //   callbacks: {
     //     label: function (context) {
-    //       return ` ${context.dataset.label}: ${context.raw}`;
+    //       return ` ${context.dataset.label}: ${yAxisFormatter(context.raw)}`;
     //     },
     //   },
     // },
-     tooltip: {
-      enabled: false,
-      external: () => {},
-    },
   },
 
   scales: {
@@ -126,8 +141,8 @@ const options = {
         display: false,
       },
 
-      barPercentage: 0.35,
-      categoryPercentage: 0.5,
+      barPercentage: 0.98,
+      categoryPercentage: 0.4,
 
       ticks: {
         color: "#64748B",
@@ -141,34 +156,37 @@ const options = {
       },
     },
 
-   y: {
-  beginAtZero: true,
-  max: 80,
+    y: {
+      beginAtZero: true,
 
-  ticks: {
-    stepSize: 20,
-    color: "#64748B",
+      ticks: {
+        stepSize: 50,
 
-    font: {
-      size: 9,
+        color: "#64748B",
+
+        font: {
+          size: 9,
+        },
+
+        padding: 8,
+
+        callback: (value) => yAxisFormatter(value),
+      },
+
+      // Horizontal lines removed
+      grid: {
+        display: false,
+        drawTicks: false,
+      },
+
+      border: {
+        display: false,
+      },
     },
-
-    padding: 8,
-  },
-
-  grid: {
-    display: false,
-    drawTicks: false,
-  },
-
-  border: {
-    display: false,
-  },
-},
   },
 };
 
-const Attrition = () => {
+const DailySalary = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
@@ -176,29 +194,29 @@ const Attrition = () => {
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#f9f7de] flex items-center justify-center text-[#dfa44a]">
-              <PeopleAltIcon sx={{ fontSize: 20 }} />
+            <div className="w-9 h-9 rounded-lg bg-[#eafef5] flex items-center justify-center text-[#02bc7b]">
+              <PaymentsIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Daily Attrition Rate
+                Daily Salary &amp; Wage Distribution
               </h2>
 
               <p className="text-[10px] text-slate-500 mt-0.5">
-                Deployed headcount with day-over-day movement
+                Daily wage expenses and overtime payout tracking
               </p>
             </div>
           </div>
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-            {/* Monthly average */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            {/* Average daily */}
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
 
-              <span className="text-[10px] font-semibold text-amber-600">
-                Monthly Average: 3.4%
+              <span className="text-[10px] font-semibold text-emerald-600">
+                Avg Daily: ₹1.68L
               </span>
             </span>
 
@@ -216,14 +234,15 @@ const Attrition = () => {
 
         {/* Legend */}
         <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Requirement */}
+          {/* Regular Wages */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+            <span className="w-2 h-2 rounded-full bg-[#06B6D4]"></span>
 
             <span className="text-[9px] font-medium text-slate-500">
-             Employees Left
+              Average Daily Salary
             </span>
           </div>
+
         </div>
       </div>
 
@@ -242,4 +261,4 @@ const Attrition = () => {
   );
 };
 
-export default Attrition;
+export default DailySalary;

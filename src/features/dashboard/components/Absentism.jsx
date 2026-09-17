@@ -1,4 +1,4 @@
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
@@ -48,10 +48,10 @@ const chartData = {
         45, 55, 40, 60, 50, 34, 60, 45,
         55, 40, 60, 50, 34, 60, 55, 45,
       ],
-      backgroundColor: "#1D4ED8",
+      backgroundColor: "#feb532",
 
       // Fixed thin bar width
-      barThickness: 22,
+      barThickness: 28,
 
       borderRadius: {
         topLeft: 5,
@@ -79,21 +79,6 @@ const options = {
       display: false,
     },
 
-    // Numbers on top of every bar
-    datalabels: {
-      display: true,
-      anchor: "end",
-      align: "top",
-      offset: 4,
-      color: "#334155",
-      font: {
-        size: 10,
-        weight: "600",
-        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      },
-      formatter: (value) => value,
-    },
-
     // tooltip: {
     //   backgroundColor: "#1E293B",
     //   titleColor: "#FFFFFF",
@@ -107,9 +92,25 @@ const options = {
     //     },
     //   },
     // },
+    
      tooltip: {
       enabled: false,
       external: () => {},
+    },
+
+    // Data number on top of every bar
+    datalabels: {
+      display: true,
+      anchor: "end",
+      align: "top",
+      offset: 4,
+      color: "#334155",
+      font: {
+        size: 10,
+        weight: "600",
+        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      },
+      formatter: (value) => value,
     },
   },
 
@@ -126,8 +127,8 @@ const options = {
         display: false,
       },
 
-      barPercentage: 0.35,
-      categoryPercentage: 0.5,
+      barPercentage: 0.98,
+      categoryPercentage: 0.4,
 
       ticks: {
         color: "#64748B",
@@ -147,6 +148,7 @@ const options = {
 
   ticks: {
     stepSize: 20,
+
     color: "#64748B",
 
     font: {
@@ -168,7 +170,7 @@ const options = {
   },
 };
 
-const Attrition = () => {
+const Absentism = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
@@ -176,17 +178,17 @@ const Attrition = () => {
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#f9f7de] flex items-center justify-center text-[#dfa44a]">
-              <PeopleAltIcon sx={{ fontSize: 20 }} />
+            <div className="w-9 h-9 rounded-lg bg-[#fff0f0] flex items-center justify-center text-[#e92553]">
+              <EventBusyIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Daily Attrition Rate
+                Daily Absenteeism
               </h2>
 
               <p className="text-[10px] text-slate-500 mt-0.5">
-                Deployed headcount with day-over-day movement
+                Tracking planned vs unplanned absenteeism movement
               </p>
             </div>
           </div>
@@ -194,11 +196,11 @@ const Attrition = () => {
           {/* Right side */}
           <div className="flex items-center gap-4">
             {/* Monthly average */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
 
-              <span className="text-[10px] font-semibold text-amber-600">
-                Monthly Average: 3.4%
+              <span className="text-[10px] font-semibold text-rose-600">
+                Monthly Average: 4.8%
               </span>
             </span>
 
@@ -216,12 +218,12 @@ const Attrition = () => {
 
         {/* Legend */}
         <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Requirement */}
+          {/* Planned Leave */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+            <span className="w-2 h-2 rounded-full bg-[#3B82F6]"></span>
 
             <span className="text-[9px] font-medium text-slate-500">
-             Employees Left
+              Absent Employees
             </span>
           </div>
         </div>
@@ -242,4 +244,4 @@ const Attrition = () => {
   );
 };
 
-export default Attrition;
+export default Absentism;
